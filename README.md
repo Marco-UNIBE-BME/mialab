@@ -35,6 +35,8 @@ This is the repository for our MIA Lab pipeline-project submission.
 ### Group Members
 José Miguel PINTO INÁCIO | jose.inacio@students.unibe.ch
 
+Max BÖGLI | max.boegli@students.unibe.ch
+
 Marco Daniel PORTMANN | marco.portmann@students.unibe.ch
 
 ## Useful links
