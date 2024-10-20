@@ -91,7 +91,7 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
     # initialize evaluator
     evaluator = putil.init_evaluator()
 
-    # crawl the training image directories
+    # crawl the test image directories
     crawler = futil.FileSystemDataCrawler(data_test_dir,
                                           LOADING_KEYS,
                                           futil.BrainImageFilePathGenerator(),
@@ -123,7 +123,7 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
         images_prediction.append(image_prediction)
         images_probabilities.append(image_probabilities)
 
-    # post-process segmentation and evaluate with post-processing
+    # post-process segmentation and evaluate with post-processing (José's note: Our task)
     post_process_params = {'simple_post': True}
     images_post_processed = putil.post_process_batch(images_test, images_prediction, images_probabilities,
                                                      post_process_params, multi_process=True)
