@@ -21,7 +21,7 @@ TEST_PACKAGES = []
 
 setup(
     name="MIALab",
-    version="0.4.0",
+    version="0.1.0",
     description="medical image analysis laboratory",
     long_description=readme,
     author="Healthcare Imaging A.I.",
