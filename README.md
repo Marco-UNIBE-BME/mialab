@@ -39,6 +39,22 @@ Max BÖGLI | max.boegli@students.unibe.ch
 
 Marco Daniel PORTMANN | marco.portmann@students.unibe.ch
 
+## Executing the pipeline
+
+The dataset (atlas, train and test) is in the folder "dataset". To execute the pipeline we must add parser arguments to this folder:
+
+NOTE: Make sure to call this while being in the mialab folder, the paths are relative.
+
+NOTE: In the future we might want to add the aboslute path as default parser arguments.
+
+```bash
+python pipeline.py --data_atlas_dir "./dataset/atlas" --data_train_dir "./dataset/train" --data_test_dir "./dataset/test"
+```
+After execution the pipeline script will create an output folder called "mia-results".
+
+NOTE: This folder was added to the .gitignore.
+
+
 ## Useful links
 
 -   [MIA24 Slack](mialab2024.slack.com)
