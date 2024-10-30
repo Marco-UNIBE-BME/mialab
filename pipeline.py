@@ -62,8 +62,11 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
                           'normalization_pre': True,
                           'registration_pre': True,
                           'coordinates_feature': True,
-                          'intensity_feature': True,
-                          'gradient_intensity_feature': True}
+                          't1w_intensity_feature': True,
+                          't1w_gradient_intensity_feature': True,
+                          't2w_intensity_feature': True,  # José: Enable T2w intensity feature extraction
+                          't2w_gradient_intensity_feature': True  # José: Enable T2w gradient intensity feature extraction
+    }
 
     # load images for training and pre-process
     images = putil.pre_process_batch(crawler.data, pre_process_params, multi_process=False)
