@@ -304,7 +304,7 @@ def init_evaluator() -> eval_.Evaluator:
         metric.Precision(),  # José: TP/(TP+FP)
         metric.Sensitivity(),  # José: Recall or True Positive Rate -> TP/(TP+FN)
         metric.Fallout(),  # José: False Positive Rate, i.e., 1-Specificity -> 1-(TN/(TN+FP))
-        metric.JaccardCoefficient(),  # José: Intersection of Union
+        metric.JaccardCoefficient(),  # José: Intersection over Union
         metric.DiceCoefficient(),  # José: F1-score
         metric.AverageDistance(),  # José: Average of all minimum surface distances
         metric.HausdorffDistance(percentile=95)  # José: Maximum (without top 5 %, i.e., potential outliers) of all minimum surface distances
