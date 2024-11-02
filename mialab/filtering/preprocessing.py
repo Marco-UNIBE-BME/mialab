@@ -4,6 +4,7 @@ Image pre-processing aims to improve the image quality (image intensities) for s
 """
 import warnings
 
+import numpy as np
 import pymia.filtering.filter as pymia_fltr
 import SimpleITK as sitk
 
@@ -29,9 +30,25 @@ class ImageNormalization(pymia_fltr.Filter):
         img_arr = sitk.GetArrayFromImage(image)
 
         # todo: normalize the image using numpy
-        warnings.warn('No normalization implemented. Returning unprocessed image.')
+        # warnings.warn('No normalization implemented. Returning unprocessed image.')
 
-        img_out = sitk.GetImageFromArray(img_arr)
+        # José: Z-score normalization
+        img_mean = np.mean(img_arr)
+        img_std = np.std(img_arr)
+        if img_std != 0:
+            img_arr_normalized = (img_arr - img_mean) / img_std
+        else:
+            img_arr_normalized = img_arr  # José: Avoid division by zero if the image has no variance
+
+        # José: Min-max normalization (alternative)
+        # img_min = np.min(img_arr)
+        # img_max = np.max(img_arr)
+        # if img_max != img_min:
+        #     img_arr_normalized = (img_arr - img_min) / (img_max - img_min)
+        # else:
+        #     img_arr_normalized = img_arr  # José: Avoid division by zero if the image is constant
+
+        img_out = sitk.GetImageFromArray(img_arr_normalized)
         img_out.CopyInformation(image)
 
         return img_out

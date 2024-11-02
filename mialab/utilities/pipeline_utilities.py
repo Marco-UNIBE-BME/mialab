@@ -299,9 +299,18 @@ def init_evaluator() -> eval_.Evaluator:
     """
 
     # initialize metrics
-    metrics = [metric.DiceCoefficient()]
+    metrics = [  # José: A set of evaluation metrics (https://pymia.readthedocs.io/en/latest/pymia.evaluation.metric.html)
+        metric.Accuracy(),  # José: (TP+TN)/All predictions
+        metric.Precision(),  # José: TP/(TP+FP)
+        metric.Sensitivity(),  # José: Recall or True Positive Rate -> TP/(TP+FN)
+        metric.Fallout(),  # José: False Positive Rate, i.e., 1-Specificity -> 1-(TN/(TN+FP))
+        metric.JaccardCoefficient(),  # José: Intersection of Union
+        metric.DiceCoefficient(),  # José: F1-score
+        metric.AverageDistance(),  # José: Average of all minimum surface distances
+        metric.HausdorffDistance(percentile=95)  # José: Maximum (without top 5 %, i.e., potential outliers) of all minimum surface distances
+    ]
     # todo: add hausdorff distance, 95th percentile (see metric.HausdorffDistance)
-    warnings.warn('Initialized evaluation with the Dice coefficient. Do you know other suitable metrics?')
+    # warnings.warn('Initialized evaluation with the Dice coefficient. Do you know other suitable metrics?')
 
     # define the labels to evaluate
     labels = {1: 'WhiteMatter',
