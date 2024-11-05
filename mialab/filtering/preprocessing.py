@@ -90,12 +90,13 @@ class SkullStripping(pymia_fltr.Filter):
             params (SkullStrippingParameters): The parameters with the brain mask.
 
         Returns:
-            sitk.Image: The normalized image.
+            sitk.Image: The normalized image. #NOTE: Was like this, probably copy paste error; Left it unchanged ~marco
         """
         mask = params.img_mask  # the brain mask
 
         # todo: remove the skull from the image by using the brain mask
-        warnings.warn('No skull-stripping implemented. Returning unprocessed image.')
+        # warnings.warn('No skull-stripping implemented. Returning unprocessed image.')
+        image = sitk.Mask(image, mask)
 
         return image
 
@@ -165,3 +166,36 @@ class ImageRegistration(pymia_fltr.Filter):
         """
         return 'ImageRegistration:\n' \
             .format(self=self)
+
+#### UNIT TEST
+if __name__ == '__main__':
+    print(4*"+", "Executing Unit test of preprocessing",4*"+")
+    import matplotlib.pyplot as plt
+
+    skull_strip = SkullStripping() # Skull stripper object
+
+    # LOAD SOME MASK
+    mask_path = "dataset/train/101107/Brainmasknative.nii.gz" # Each image has its mask already
+    mask = sitk.ReadImage(mask_path)
+    params = SkullStrippingParameters(mask)# Object that loads the mask for stripping
+
+    # LOAD THE CORRESPONDING IMAGE
+    path:str = "dataset/train/101107/T2native.nii.gz"
+    image:sitk.Image = sitk.ReadImage(path)
+
+    # APPLY THE SKULLSTRIPPPING
+    masked_image = skull_strip.execute(image, params)
+
+    # DISPLAY THE RESULT ON ONE SLICE
+    slice_index = image.GetSize()[2] // 2
+
+    slice_image = image[:,:,slice_index]
+    slice_masked = masked_image[:,:,slice_index]
+
+    slice_array = sitk.GetArrayViewFromImage(slice_image)
+    slice_masked_array = sitk.GetArrayFromImage(slice_masked)
+
+    fig, (ax1, ax2) = plt.subplots(1,2)
+    ax1.imshow(slice_array, cmap='gray')
+    ax2.imshow(slice_masked_array, cmap='gray')
+    plt.show()
