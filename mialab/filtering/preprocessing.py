@@ -128,7 +128,9 @@ class ImageRegistration(pymia_fltr.Filter):
 
         # todo: replace this filter by a registration. Registration can be costly, therefore, we provide you the
         # transformation, which you only need to apply to the image!
-        warnings.warn('No registration implemented. Returning unregistered image')
+        if params is None:
+            warnings.warn('No registration implemented. Returning unregistered image')
+            return image
 
         atlas = params.atlas
         transform = params.transformation
@@ -137,8 +139,24 @@ class ImageRegistration(pymia_fltr.Filter):
         # note: if you are interested in registration, and want to test it, have a look at
         # pymia.filtering.registration.MultiModalRegistration. Think about the type of registration, i.e.
         # do you want to register to an atlas or inter-subject? Or just ask us, we can guide you ;-)
+        # Handle registration differently based on whether it's ground truth data
 
-        return image
+        if is_ground_truth:
+            interpolator = sitk.sitkNearestNeighbor  # Use nearest neighbor interpolation for labels
+        else:
+            interpolator = sitk.sitkLinear  # Use linear interpolation for intensity images
+
+        # Apply the transformation to the input image
+        registered_image = sitk.Resample(
+            image,
+            atlas,  # Match the reference (atlas) image’s size and spacing
+            transform,
+            interpolator,
+            0,  # Default pixel value for out-of-bound pixels
+            image.GetPixelID()  # Keep the same pixel type as the input
+        )
+
+        return registered_image
 
     def __str__(self):
         """Gets a printable string representation.
