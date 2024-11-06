@@ -175,6 +175,7 @@ $RECYCLE.BIN/
 .idea/**/tasks.xml
 .idea/**/Project_Default.xml
 .idea/dictionaries
+.idea/material_theme_project_new.xml
 
 # Sensitive or high-churn files:
 .idea/**/dataSources/
