@@ -185,6 +185,82 @@ class ImageRegistration(pymia_fltr.Filter):
         return 'ImageRegistration:\n' \
             .format(self=self)
 
+
+class DenoisingFilter(pymia_fltr.Filter):  # José: Denoising filter
+    """Represents a denoising filter."""
+
+    def __init__(self, method: str = 'gaussian', **kwargs):
+        """Initializes a new instance of the DenoisingFilter class.
+
+        Args:
+            method (str): The denoising method to apply ('gaussian' or 'median').
+            kwargs: Additional parameters for the denoising method.
+        """
+        super().__init__()
+        self.method = method
+        self.kwargs = kwargs
+
+    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
+        """Executes denoising on an image.
+
+        Args:
+            image (sitk.Image): The image.
+            params (FilterParams): The parameters (unused).
+
+        Returns:
+            sitk.Image: The denoised image.
+        """
+        if self.method == 'gaussian':
+            sigma = self.kwargs.get('sigma', 1.0)
+            return sitk.SmoothingRecursiveGaussian(image, sigma)
+
+        elif self.method == 'median':
+            radius = self.kwargs.get('radius', 2)
+            return sitk.Median(image, [radius]*3)
+
+        elif self.method == 'bilateral':
+            domain_sigma = self.kwargs.get('domain_sigma', 2.0)
+            range_sigma = self.kwargs.get('range_sigma', 50.0)
+            return sitk.Bilateral(
+                image,
+                domainSigma=domain_sigma,
+                rangeSigma=range_sigma
+            )
+
+        elif self.method == 'anisotropic':
+            image = sitk.Cast(image, sitk.sitkFloat32)  # José: Cast the image to a supported pixel type (e.g., float32)
+            time_step = self.kwargs.get('time_step', 0.0625)
+            conductance = self.kwargs.get('conductance', 3.0)
+            iterations = self.kwargs.get('iterations', 5)
+            return sitk.CurvatureAnisotropicDiffusion(
+                image, timeStep=time_step,
+                conductanceParameter=conductance,
+                numberOfIterations=iterations
+            )
+
+        else:
+            warnings.warn(f"Unknown denoising method '{self.method}'. Returning unprocessed image.")
+            return image
+
+    def __str__(self):
+        """Gets a printable string representation.
+
+        Returns:
+            str: String representation.
+        """
+        return f'DenoisingFilter (method={self.method}):\n' \
+            .format(self=self)
+
+
+    def __str__(self):
+        """Gets a printable string representation.
+
+        Returns:
+            str: String representation.
+        """
+        return f'DenoisingFilter (method={self.method}):\n' \
+            .format(self=self)
+
 #### UNIT TEST
 if __name__ == '__main__':
     print(4*"+", "Executing Unit test of preprocessing",4*"+")
