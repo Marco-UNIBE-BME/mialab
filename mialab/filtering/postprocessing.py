@@ -4,9 +4,9 @@ Image post-processing aims to alter images such that they depict a desired repre
 """
 import warnings
 
-# import numpy as np
-# import pydensecrf.densecrf as crf
-# import pydensecrf.utils as crf_util
+import numpy as np
+import pydensecrf.densecrf as crf
+import pydensecrf.utils as crf_util
 import pymia.filtering.filter as pymia_fltr
 import SimpleITK as sitk
 
@@ -104,6 +104,7 @@ class DenseCRF(pymia_fltr.Filter):
 
         d = crf.DenseCRF(x * y * z, no_labels)  # width, height, nlabels
         U = crf_util.unary_from_softmax(img_probability)
+        U = np.ascontiguousarray(U) # Insert this ~marco
         d.setUnaryEnergy(U)
 
         stack = np.stack([img_t2, img_ir], axis=3)
