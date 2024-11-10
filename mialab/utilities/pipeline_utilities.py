@@ -58,8 +58,10 @@ class FeatureExtractor:
         self.img = img
         self.training = kwargs.get('training', True)
         self.coordinates_feature = kwargs.get('coordinates_feature', False)
-        self.intensity_feature = kwargs.get('intensity_feature', False)
-        self.gradient_intensity_feature = kwargs.get('gradient_intensity_feature', False)
+        self.t1w_intensity_feature = kwargs.get('t1w_intensity_feature', False)
+        self.t1w_gradient_intensity_feature = kwargs.get('t1w_gradient_intensity_feature', False)
+        self.t2w_intensity_feature = kwargs.get('t2w_intensity_feature', False)  # José: Add T2w intensity to feature matrix
+        self.t2w_gradient_intensity_feature = kwargs.get('t2w_gradient_intensity_feature', False)  # José: Add T2w gradient intensity to feature matrix
 
     def execute(self) -> structure.BrainImage:
         """Extracts features from an image.
@@ -67,21 +69,29 @@ class FeatureExtractor:
         Returns:
             structure.BrainImage: The image with extracted features.
         """
+
         # todo: add T2w features
-        warnings.warn('No features from T2-weighted image extracted.')
+        # warnings.warn('No features from T2-weighted image extracted.')
 
         if self.coordinates_feature:
             atlas_coordinates = fltr_feat.AtlasCoordinates()
             self.img.feature_images[FeatureImageTypes.ATLAS_COORD] = \
                 atlas_coordinates.execute(self.img.images[structure.BrainImageTypes.T1w])
 
-        if self.intensity_feature:
+        if self.t1w_intensity_feature:
             self.img.feature_images[FeatureImageTypes.T1w_INTENSITY] = self.img.images[structure.BrainImageTypes.T1w]
 
-        if self.gradient_intensity_feature:
+        if self.t1w_gradient_intensity_feature:
             # compute gradient magnitude images
             self.img.feature_images[FeatureImageTypes.T1w_GRADIENT_INTENSITY] = \
                 sitk.GradientMagnitude(self.img.images[structure.BrainImageTypes.T1w])
+
+        if self.t2w_intensity_feature:  # José: Add T2w intensity feature
+            self.img.feature_images[FeatureImageTypes.T2w_INTENSITY] = self.img.images[structure.BrainImageTypes.T2w]
+
+        if self.t2w_gradient_intensity_feature:  # José: Add T2w gradient intensity feature
+            self.img.feature_images[FeatureImageTypes.T2w_GRADIENT_INTENSITY] = \
+                sitk.GradientMagnitude(self.img.images[structure.BrainImageTypes.T2w])
 
         self._generate_feature_matrix()
 
@@ -289,9 +299,18 @@ def init_evaluator() -> eval_.Evaluator:
     """
 
     # initialize metrics
-    metrics = [metric.DiceCoefficient()]
+    metrics = [  # José: A set of evaluation metrics (https://pymia.readthedocs.io/en/latest/pymia.evaluation.metric.html)
+        metric.Accuracy(),  # José: (TP+TN)/All predictions
+        metric.Precision(),  # José: TP/(TP+FP)
+        metric.Sensitivity(),  # José: Recall or True Positive Rate -> TP/(TP+FN)
+        metric.Fallout(),  # José: False Positive Rate, i.e., 1-Specificity -> 1-(TN/(TN+FP))
+        metric.JaccardCoefficient(),  # José: Intersection over Union
+        metric.DiceCoefficient(),  # José: F1-score
+        metric.AverageDistance(),  # José: Average of all minimum surface distances
+        metric.HausdorffDistance(percentile=95)  # José: Maximum (without top 5 %, i.e., potential outliers) of all minimum surface distances
+    ]
     # todo: add hausdorff distance, 95th percentile (see metric.HausdorffDistance)
-    warnings.warn('Initialized evaluation with the Dice coefficient. Do you know other suitable metrics?')
+    # warnings.warn('Initialized evaluation with the Dice coefficient. Do you know other suitable metrics?')
 
     # define the labels to evaluate
     labels = {1: 'WhiteMatter',
