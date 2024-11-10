@@ -9,6 +9,8 @@ import sys
 import timeit
 import warnings
 
+from inspect import getsourcefile
+
 import SimpleITK as sitk
 import sklearn.ensemble as sk_ensemble
 import numpy as np
@@ -74,8 +76,8 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
 
     warnings.warn('Random forest parameters not properly set.')
     forest = sk_ensemble.RandomForestClassifier(max_features=images[0].feature_matrix[0].shape[1],
-                                                n_estimators=1,
-                                                max_depth=5)
+                                                n_estimators=10,
+                                                max_depth=50)
 
     start_time = timeit.default_timer()
     forest.fit(data_train, labels_train)
@@ -124,7 +126,8 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
         images_probabilities.append(image_probabilities)
 
     # post-process segmentation and evaluate with post-processing (José's note: Our task)
-    post_process_params = {'simple_post': True}
+    #post_process_params = {'simple_post': True}
+    post_process_params = {'crf_post': True}
     images_post_processed = putil.post_process_batch(images_test, images_prediction, images_probabilities,
                                                      post_process_params, multi_process=True)
 
@@ -158,10 +161,13 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
 if __name__ == "__main__":
     """The program's entry point."""
 
-    script_dir = os.path.dirname(sys.argv[0])
+    # script_dir = os.path.dirname(sys.argv[0])
+    script_full:str = os.path.abspath(getsourcefile(lambda:0)) # This returns reliably the current directory of the executing file for me. ~marco
+    script_dir:str = os.path.dirname(script_full)
 
     parser = argparse.ArgumentParser(description='Medical image analysis pipeline for brain tissue segmentation')
 
+    # Changed the default args to our folder structure. ~marco
     parser.add_argument(
         '--result_dir',
         type=str,
@@ -172,21 +178,21 @@ if __name__ == "__main__":
     parser.add_argument(
         '--data_atlas_dir',
         type=str,
-        default=os.path.normpath(os.path.join(script_dir, '../data/atlas')),
+        default=os.path.normpath(os.path.join(script_dir, './dataset/atlas')),
         help='Directory with atlas data.'
     )
 
     parser.add_argument(
         '--data_train_dir',
         type=str,
-        default=os.path.normpath(os.path.join(script_dir, '../data/train/')),
+        default=os.path.normpath(os.path.join(script_dir, './dataset/train/')),
         help='Directory with training data.'
     )
 
     parser.add_argument(
         '--data_test_dir',
         type=str,
-        default=os.path.normpath(os.path.join(script_dir, '../data/test/')),
+        default=os.path.normpath(os.path.join(script_dir, './dataset/test/')),
         help='Directory with testing data.'
     )
 
