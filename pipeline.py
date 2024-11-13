@@ -109,7 +109,16 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
                                           LOADING_KEYS,
                                           futil.BrainImageFilePathGenerator(),
                                           futil.DataDirectoryFilter())
-    pre_process_params = {'skullstrip_pre': True,
+    pre_process_params = {'denoising_pre': False,  # José: Enable denoising
+                          'denoising_method': 'gaussian',  # José: Options -> 'gaussian', 'median', 'bilateral', 'anisotropic'
+                          'denoising_sigma': 0.5,  # José: Sigma for Gaussian filtering (0.5 best)
+                          'denoising_radius': 1,  # José: Radius for Median filtering (1 best)
+                          'domain_sigma': 3,  # José: Domain, i.e., spatial sigma for Bilateral filtering
+                          'range_sigma': 40.0,  # José: Range sigma for Bilateral filtering
+                          'time_step': 0.1,  # José: For Anisotropic filtering
+                          'conductance': 2.5,  # José: For Anisotropic filtering
+                          'iterations': 10,  # José: For Anisotropic filtering
+                          'skullstrip_pre': True,
                           'normalization_pre': True,
                           'registration_pre': True,
                           'coordinates_feature': True,
