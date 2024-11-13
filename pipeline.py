@@ -52,8 +52,8 @@ def postprocess_only(path_inference_output:str, result_dir:str):
 
     print("Finished loading and init evaluator. Postprocess start.")
 
-    #post_process_params = {'simple_post': True}
-    post_process_params = {'crf_post': True}
+    post_process_params = {'simple_post': True}
+    # post_process_params = {'crf_post': True}
     images_post_processed = putil.post_process_batch(images_test, images_prediction, images_probabilities,
                                                      post_process_params, multi_process=True)
 
