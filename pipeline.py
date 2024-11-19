@@ -37,7 +37,7 @@ LOADING_KEYS = [structure.BrainImageTypes.T1w,
                 structure.BrainImageTypes.RegistrationTransform]  # the list of data we will load
 
 def postprocess_only(path_inference_output:str, result_dir:str):
-    """This function loads inference results and applies post processing to them"""
+    """This function loads inference results and applies post-processing to them"""
 
     with open(path_inference_output, 'rb') as f:
         (images_test, images_prediction, images_probabilities) = joblib.load(f)
@@ -50,7 +50,7 @@ def postprocess_only(path_inference_output:str, result_dir:str):
     # initialize evaluator
     evaluator = putil.init_evaluator()
 
-    print("Finished loading and init evaluator. Postprocess start.")
+    print("Finished loading and init evaluator. Post-process start.")
 
     post_process_params = {'simple_post': True}
     # post_process_params = {'crf_post': True}
@@ -109,7 +109,7 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
                                           LOADING_KEYS,
                                           futil.BrainImageFilePathGenerator(),
                                           futil.DataDirectoryFilter())
-    pre_process_params = {'denoising_pre': False,  # José: Enable denoising
+    pre_process_params = {'denoising_pre': False,  # José: Enable or disable denoising
                           'denoising_method': 'gaussian',  # José: Options -> 'gaussian', 'median', 'bilateral', 'anisotropic'
                           'denoising_sigma': 0.5,  # José: Sigma for Gaussian filtering (0.5 best)
                           'denoising_radius': 1,  # José: Radius for Median filtering (1 best)
@@ -137,8 +137,8 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
 
     # warnings.warn('Random forest parameters not properly set.')
     forest = sk_ensemble.RandomForestClassifier(max_features=images[0].feature_matrix[0].shape[1],
-                                                n_estimators=10,
-                                                max_depth=50)  # José: Optimal parameters of Colombo et al.
+                                                n_estimators=20,
+                                                max_depth=50)  # José: Optimal parameters from grid search (ne20 & md50)
 
     start_time = timeit.default_timer()
     forest.fit(data_train, labels_train)
@@ -187,7 +187,7 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
         images_probabilities.append(image_probabilities)
 
 
-    """This exports the current state to be postprocessed later."""
+    """This exports the current state to be post-processed later."""
     #output_name:str = 'inferences/' + t + '.pkl'
     output_name:str = 'inferences/' + t + '.joblib' # With joblib its 800MB. With pickle it is 8GB.
     with open(output_name, 'wb') as f:
@@ -195,9 +195,14 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
         # pickle.dump(export_data, f)
         joblib.dump(export_data, f, compress=3) # Could compress up to 9.
 
-    # post-process segmentation and evaluate with post-processing (José's note: Our task)
+    # post-process segmentation and evaluate with post-processing (José: Our task)
     #post_process_params = {'simple_post': True}
-    post_process_params = {'crf_post': True}
+    post_process_params = {
+        'morphological_post': True,  # José: Opening & closing post-processing
+        'closing_radius': 1,
+        'opening_radius': 1
+    }
+    #post_process_params = {'crf_post': True}
     images_post_processed = putil.post_process_batch(images_test, images_prediction, images_probabilities,
                                                      post_process_params, multi_process=True)
 
