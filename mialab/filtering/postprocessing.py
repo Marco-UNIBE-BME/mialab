@@ -10,6 +10,12 @@ import numpy as np
 import pymia.filtering.filter as pymia_fltr
 import SimpleITK as sitk
 
+# Our dictionary keys
+BINARY_IMAGE_KEY:str = 'image'
+OPENING_KERNEL_SIZE:str = 'oks'
+CLOSING_KERNEL_SIZE:str = 'cks'
+OP_CL_IMAGE_KEY:str = 'ocik'
+#etc.
 
 class ImagePostProcessing(pymia_fltr.Filter):
     """Represents a post-processing filter."""
@@ -33,8 +39,33 @@ class ImagePostProcessing(pymia_fltr.Filter):
         # todo: replace this filter by a post-processing - or do we need post-processing at all?
         # if params is None:
         #     raise ValueError('Parameters for DenseCRF are required for post-processing.')
-        
-        # post_processed = self.dense_crf(image, params)
+        prepost:PrePostProcessing = PrePostProcessing()
+        morph = MorphologicalOpeningClosing()
+
+        # Step 1 split image into labels
+        data = prepost.init(image)
+        prepost.get_label_binary_images(image, data)
+        #prepost.define_kernel_sizes(data)
+
+        output_image = sitk.Image(image.GetSize(), sitk.sitkUInt8)
+        output_image.CopyInformation(image)
+
+        for label in data.keys():
+            processed_image = morph.execute(data[label][BINARY_IMAGE_KEY])
+            data[label][OP_CL_IMAGE_KEY] = processed_image
+            output_image = sitk.Mask(image=output_image, maskImage=sitk.Cast(sitk.BinaryNot(processed_image), sitk.sitkUInt8), outsideValue=int(label))
+
+        print(data[0][OPENING_KERNEL_SIZE])
+
+
+
+        # Step 2 to N our post on split mages
+
+        # N+1 Merge them together
+
+        # Post post processing.
+
+
         warnings.warn('No post-processing implemented. Can you think about something?')
 
         return image
@@ -48,6 +79,31 @@ class ImagePostProcessing(pymia_fltr.Filter):
         return 'ImagePostProcessing:\n' \
             .format(self=self)
 
+class PrePostProcessing:
+    def __init__(self) -> None:
+        """Intiialize the pre-post-processor. Pass the image with predicted labels to intitialize the data structure for the pipeline."""
+        pass
+    
+    def init(self, prediction_image:sitk.Image) -> dict:
+        image_arr = sitk.GetArrayViewFromImage(prediction_image).flatten()
+        labels = np.unique(image_arr)
+        output_dict:dict = {}
+        for label in labels:
+            output_dict[label] = {}
+
+        return output_dict
+
+    def get_label_binary_images(self, image:sitk.Image, data:dict) -> None:
+        """This function splits the predicted segmentation into individual binary images and stores the in a data structure."""
+        for label in data.keys():
+            if label == 0:
+                continue
+            binary_image = sitk.Equal(image, int(label))
+            data[label][BINARY_IMAGE_KEY] = binary_image
+
+    def define_kernel_sizes(self, data:dict) -> None:
+        """This function defines the opening and closing kernel sizes per label image. (Data driven)"""
+        pass
 
 class MorphologicalOpeningClosing(pymia_fltr.Filter):  # José: New morphological opening and closing post-processing
     """Represents a morphological opening and closing filter."""
@@ -95,7 +151,7 @@ class MorphologicalOpeningClosing(pymia_fltr.Filter):  # José: New morphologica
             processed_image = self.apply_closing(binary_image)
             processed_image = self.apply_opening(processed_image)
 
-
+            # TODO: Figure out priority. Via probabilities?
             output_image = sitk.Mask(image=output_image, maskImage=sitk.Cast(sitk.BinaryNot(processed_image), sitk.sitkUInt8), outsideValue=int(label))
 
         print(output_image.GetPixelIDTypeAsString())

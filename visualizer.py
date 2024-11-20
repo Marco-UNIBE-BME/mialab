@@ -108,7 +108,7 @@ class NiftiImageViewer:
 
 # Example usage
 if __name__ == "__main__":
-    from mialab.filtering.postprocessing import MorphologicalOpeningClosing
+    from mialab.filtering.postprocessing import ImagePostProcessing
     filepath1 = "mia-result/2024-11-19-17-56-35/117122_SEG.mha"  # Replace with the first image file path
     filepath2 = "mia-result/2024-11-19-17-56-35/117122_SEG.mha"  # Replace with the second image file path
 
@@ -117,7 +117,8 @@ if __name__ == "__main__":
 
     # Add evaluation.
     # Maybe add other views.
-    morphological = MorphologicalOpeningClosing(1,1)
-    pp = morphological.execute_per_label(pp)
+    processor = ImagePostProcessing()
+    pp = processor.execute(pp)
+
     viewer = NiftiImageViewer(raw, pp)
     viewer.display()
