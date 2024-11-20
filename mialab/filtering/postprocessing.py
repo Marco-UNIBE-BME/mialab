@@ -72,6 +72,7 @@ class MorphologicalOpeningClosing(pymia_fltr.Filter):  # José: New morphologica
     def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
         """Execute the morphological opening and closing operations."""
         # Apply closing first, then opening
+        warnings.warn('Post-processing: Morphological operations, i.e., opening and closing')
         image = self.apply_closing(image)
         image = self.apply_opening(image)
         return image
