@@ -74,10 +74,11 @@ class NiftiImageViewer:
     def display(self):
         """Interactive display of the two images."""
         # Concatenate DICE values and labels into a readable string
-        raw_dice_str = ", ".join([f"{label}: {value:.3f}" for label, value in self.dice_values_raw.items()])
-        pp_dice_str = ", ".join([f"{label}: {value:.3f}" for label, value in self.dice_values_pp.items()])
+        raw_dice_str = ", ".join([f"{label} ({value:.3f})" for label, value in self.dice_values_raw.items()])
+        pp_dice_str = ", ".join([f"{label} ({value:.3f})" for label, value in self.dice_values_pp.items()])
 
-        # Set up the figure and axes
+
+# Set up the figure and axes
         self.fig, (self.ax1, self.ax2) = plt.subplots(1, 2, figsize=(10, 5))
         self.ax1.set_title(f"Raw Segmentation - Slice {self.current_slice}")
         self.ax2.set_title(f"PP Segmentation - Slice {self.current_slice}")
@@ -86,9 +87,9 @@ class NiftiImageViewer:
 
         # Set the initial axis and DICE value display
         self.fig.suptitle(
-            f"Axis: {self.axis_labels[self.axis]}\n"
-            f"Raw DICE: {raw_dice_str}\n"
-            f"PP DICE: {pp_dice_str}"
+            f"CURRENT AXIS: {self.axis_labels[self.axis]}\n"
+            f"RAW DICES: {raw_dice_str}\n"
+            f"PP DICES: {pp_dice_str}"
         )
 
         # Display the initial slices
@@ -161,14 +162,15 @@ class NiftiImageViewer:
             self.im_display2.set_data(self.image_array2[:, :, self.current_slice])
 
         # Concatenate DICE values and labels into a readable string
-        raw_dice_str = ", ".join([f"{label}: {value:.3f}" for label, value in self.dice_values_raw.items()])
-        pp_dice_str = ", ".join([f"{label}: {value:.3f}" for label, value in self.dice_values_pp.items()])
+        raw_dice_str = ", ".join([f"{label} ({value:.3f})" for label, value in self.dice_values_raw.items()])
+        pp_dice_str = ", ".join([f"{label} ({value:.3f})" for label, value in self.dice_values_pp.items()])
 
-        # Update the figure title to show the current axis and DICE values
+
+# Update the figure title to show the current axis and DICE values
         self.fig.suptitle(
-            f"Axis: {self.axis_labels[self.axis]}\n"
-            f"Raw DICE: {raw_dice_str}\n"
-            f"PP DICE: {pp_dice_str}"
+            f"CURRENT AXIS: {self.axis_labels[self.axis]}\n"
+            f"RAW DICES: {raw_dice_str}\n"
+            f"PP DICES: {pp_dice_str}"
         )
         self.ax1.set_title(f"Raw Segmentation - Slice {self.current_slice}")
         self.ax2.set_title(f"PP Segmentation - Slice {self.current_slice}")
