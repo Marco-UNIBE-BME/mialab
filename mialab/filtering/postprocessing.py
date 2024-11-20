@@ -17,6 +17,7 @@ CLOSING_KERNEL_SIZE:str = 'cks'
 OP_CL_IMAGE_KEY:str = 'ocik'
 #etc.
 
+
 class ImagePostProcessing(pymia_fltr.Filter):
     """Represents a post-processing filter."""
 
@@ -88,6 +89,7 @@ class ImagePostProcessing(pymia_fltr.Filter):
         return 'ImagePostProcessing:\n' \
             .format(self=self)
 
+
 class PrePostProcessing:
     def __init__(self) -> None:
         """Intiialize the pre-post-processor. Pass the image with predicted labels to intitialize the data structure for the pipeline."""
@@ -113,6 +115,7 @@ class PrePostProcessing:
     def define_kernel_sizes(self, data:dict) -> None:
         """This function defines the opening and closing kernel sizes per label image. (Data driven)"""
         pass
+
 
 class MorphologicalOpeningClosing(pymia_fltr.Filter):  # José: New morphological opening and closing post-processing
     """Represents a morphological opening and closing filter."""

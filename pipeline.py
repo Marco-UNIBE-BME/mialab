@@ -36,6 +36,7 @@ LOADING_KEYS = [structure.BrainImageTypes.T1w,
                 structure.BrainImageTypes.BrainMask,
                 structure.BrainImageTypes.RegistrationTransform]  # the list of data we will load
 
+
 def postprocess_only(path_inference_output:str, result_dir:str):
     """This function loads inference results and applies post-processing to them"""
 
