@@ -10,6 +10,12 @@ import numpy as np
 import pymia.filtering.filter as pymia_fltr
 import SimpleITK as sitk
 
+# Our dictionary keys
+BINARY_IMAGE_KEY:str = 'image'
+OPENING_KERNEL_SIZE:str = 'oks'
+CLOSING_KERNEL_SIZE:str = 'cks'
+OP_CL_IMAGE_KEY:str = 'ocik'
+#etc.
 
 class ImagePostProcessing(pymia_fltr.Filter):
     """Represents a post-processing filter."""
@@ -33,8 +39,33 @@ class ImagePostProcessing(pymia_fltr.Filter):
         # todo: replace this filter by a post-processing - or do we need post-processing at all?
         # if params is None:
         #     raise ValueError('Parameters for DenseCRF are required for post-processing.')
-        
-        # post_processed = self.dense_crf(image, params)
+        prepost:PrePostProcessing = PrePostProcessing()
+        morph = MorphologicalOpeningClosing()
+
+        # Step 1 split image into labels
+        data = prepost.init(image)
+        prepost.get_label_binary_images(image, data)
+        #prepost.define_kernel_sizes(data)
+
+        output_image = sitk.Image(image.GetSize(), sitk.sitkUInt8)
+        output_image.CopyInformation(image)
+
+        for label in data.keys():
+            processed_image = morph.execute(data[label][BINARY_IMAGE_KEY])
+            data[label][OP_CL_IMAGE_KEY] = processed_image
+            output_image = sitk.Mask(image=output_image, maskImage=sitk.Cast(sitk.BinaryNot(processed_image), sitk.sitkUInt8), outsideValue=int(label))
+
+        print(data[0][OPENING_KERNEL_SIZE])
+
+
+
+        # Step 2 to N our post on split mages
+
+        # N+1 Merge them together
+
+        # Post post processing.
+
+
         warnings.warn('No post-processing implemented. Can you think about something?')
 
         return image
@@ -48,6 +79,31 @@ class ImagePostProcessing(pymia_fltr.Filter):
         return 'ImagePostProcessing:\n' \
             .format(self=self)
 
+class PrePostProcessing:
+    def __init__(self) -> None:
+        """Intiialize the pre-post-processor. Pass the image with predicted labels to intitialize the data structure for the pipeline."""
+        pass
+
+    def init(self, prediction_image:sitk.Image) -> dict:
+        image_arr = sitk.GetArrayViewFromImage(prediction_image).flatten()
+        labels = np.unique(image_arr)
+        output_dict:dict = {}
+        for label in labels:
+            output_dict[label] = {}
+
+        return output_dict
+
+    def get_label_binary_images(self, image:sitk.Image, data:dict) -> None:
+        """This function splits the predicted segmentation into individual binary images and stores the in a data structure."""
+        for label in data.keys():
+            if label == 0:
+                continue
+            binary_image = sitk.Equal(image, int(label))
+            data[label][BINARY_IMAGE_KEY] = binary_image
+
+    def define_kernel_sizes(self, data:dict) -> None:
+        """This function defines the opening and closing kernel sizes per label image. (Data driven)"""
+        pass
 
 class MorphologicalOpeningClosing(pymia_fltr.Filter):  # José: New morphological opening and closing post-processing
     """Represents a morphological opening and closing filter."""
@@ -57,127 +113,46 @@ class MorphologicalOpeningClosing(pymia_fltr.Filter):  # José: New morphologica
         self.closing_radius = closing_radius
         self.opening_radius = opening_radius
 
+        self.closing_filter = sitk.BinaryMorphologicalClosingImageFilter()
+        self.closing_filter.SetKernelRadius(self.closing_radius)
+
+        self.opening_filter = sitk.BinaryMorphologicalOpeningImageFilter()
+        self.opening_filter.SetKernelRadius(self.opening_radius)
+
     def apply_closing(self, image: sitk.Image) -> sitk.Image:
         """Apply morphological closing to an image."""
-        closing_filter = sitk.BinaryMorphologicalClosingImageFilter()
-        closing_filter.SetKernelRadius(self.closing_radius)
-        return closing_filter.Execute(image)
+        return self.closing_filter.Execute(image)
 
     def apply_opening(self, image: sitk.Image) -> sitk.Image:
         """Apply morphological opening to an image."""
-        opening_filter = sitk.BinaryMorphologicalOpeningImageFilter()
-        opening_filter.SetKernelRadius(self.opening_radius)
-        return opening_filter.Execute(image)
+        return self.opening_filter.Execute(image)
 
     def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
         """Execute the morphological opening and closing operations."""
-        # Apply closing first, then opening
-        warnings.warn('Post-processing: Morphological operations, i.e., opening and closing')
         image = self.apply_closing(image)
         image = self.apply_opening(image)
         return image
 
+    def execute_per_label(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
+        """Execute the morphological opening and closing operations."""
+        # Making sure we have binary images before running binary closing and opening
+        image_arr = sitk.GetArrayViewFromImage(image).flatten()
+        labels = np.unique(image_arr)
 
-# class DenseCRFParams(pymia_fltr.FilterParams):
-#     """Dense CRF parameters."""
-#     def __init__(self, img_t1: sitk.Image, img_t2: sitk.Image, img_proba: sitk.Image):
-#         """Initializes a new instance of the DenseCRFParams
-#
-#         Args:
-#             img_t1 (sitk.Image): The T1-weighted image.
-#             img_t2 (sitk.Image): The T2-weighted image.
-#             img_probability (sitk.Image): The posterior probability image.
-#         """
-#         self.img_t1 = img_t1
-#         self.img_t2 = img_t2
-#         # self.img_probability = img_probability
-#         self.img_probability = img_proba
-#
-#
-# class DenseCRF(pymia_fltr.Filter):
-#     """A dense conditional random field (dCRF).
-#
-#     Implements the work of Krähenbühl and Koltun, Efficient Inference in Fully Connected CRFs
-#     with Gaussian Edge Potentials, 2012. The dCRF code is taken from https://github.com/lucasb-eyer/pydensecrf.
-#     """
-#
-#     def __init__(self):
-#         """Initializes a new instance of the DenseCRF class."""
-#         super().__init__()
-#
-#     def execute(self, image: sitk.Image, params: DenseCRFParams = None) -> sitk.Image:
-#         """Executes the dCRF regularization.
-#
-#         Args:
-#             image (sitk.Image): The image (unused).
-#             params (FilterParams): The parameters.
-#
-#         Returns:
-#             sitk.Image: The filtered image.
-#         """
-#
-#         if params is None:
-#             raise ValueError('Parameters are required')
-#
-#         img_t2 = sitk.GetArrayFromImage(params.img_t1)
-#         img_ir = sitk.GetArrayFromImage(params.img_t2)
-#         img_probability = sitk.GetArrayFromImage(params.img_probability)
-#
-#         # some variables
-#         x = img_probability.shape[2]
-#         y = img_probability.shape[1]
-#         z = img_probability.shape[0]
-#         no_labels = img_probability.shape[3]
-#
-#         img_probability = np.rollaxis(img_probability, 3, 0)
-#
-#         d = crf.DenseCRF(x * y * z, no_labels)  # width, height, nlabels
-#         U = crf_util.unary_from_softmax(img_probability)
-#         U = np.ascontiguousarray(U) # Insert this ~marco
-#         d.setUnaryEnergy(U)
-#
-#         stack = np.stack([img_t2, img_ir], axis=3)
-#
-#         # Create the pairwise bilateral term from the above images.
-#         # The two `s{dims,chan}` parameters are model hyper-parameters defining
-#         # the strength of the location and image content bi-laterals, respectively.
-#
-#         # higher weight equals stronger
-#         pairwise_energy = crf_util.create_pairwise_bilateral(sdims=(1, 1, 1), schan=(1, 1), img=stack, chdim=3)
-#
-#         # `compat` (Compatibility) is the "strength" of this potential.
-#         compat = 10
-#         # compat = np.array([1, 1], np.float32)
-#         # weight --> lower equals stronger
-#         # compat = np.array([[0, 10], [10, 1]], np.float32)
-#
-#         d.addPairwiseEnergy(pairwise_energy, compat=compat,
-#                             kernel=crf.DIAG_KERNEL,
-#                             normalization=crf.NORMALIZE_SYMMETRIC)
-#
-#         # add location only
-#         # pairwise_gaussian = crf_util.create_pairwise_gaussian(sdims=(.5,.5,.5), shape=(x, y, z))
-#         #
-#         # d.addPairwiseEnergy(pairwise_gaussian, compat=.3,
-#         #                     kernel=dcrf.DIAG_KERNEL,
-#         #                     normalization=dcrf.NORMALIZE_SYMMETRIC)
-#
-#         # compatibility, kernel and normalization
-#         Q_unary = d.inference(10)
-#         # Q_unary, tmp1, tmp2 = d.startInference()
-#         #
-#         # for _ in range(10):
-#         #     d.stepInference(Q_unary, tmp1, tmp2)
-#         #     print(d.klDivergence(Q_unary) / (z* y*x))
-#         # kl2 = d.klDivergence(Q_unary) / (z* y*x)
-#
-#         # The Q is now the approximate posterior, we can get a MAP estimate using argmax.
-#         map_soln_unary = np.argmax(Q_unary, axis=0)
-#         map_soln_unary = map_soln_unary.reshape((z, y, x))
-#         map_soln_unary = map_soln_unary.astype(np.uint8)  # convert to uint8 from int64
-#         # Saving int64 with SimpleITK corrupts the file for Windows, i.e. opening it raises an ITK error:
-#         # Unknown component type error: 0
-#
-#         img_out = sitk.GetImageFromArray(map_soln_unary)
-#         img_out.CopyInformation(params.img_t1)
-#         return img_out
+        output_image = sitk.Image(image.GetSize(), sitk.sitkUInt8)
+        output_image.CopyInformation(image)
+
+        for label in labels:
+            if label == 0: # Skip background
+                continue
+            print(label, type(label))
+            binary_image = sitk.Equal(image, int(label))
+
+            processed_image = self.apply_closing(binary_image)
+            processed_image = self.apply_opening(processed_image)
+
+            # TODO: Figure out priority. Via probabilities?
+            output_image = sitk.Mask(image=output_image, maskImage=sitk.Cast(sitk.BinaryNot(processed_image), sitk.sitkUInt8), outsideValue=int(label))
+
+        print(output_image.GetPixelIDTypeAsString())
+        return output_image
