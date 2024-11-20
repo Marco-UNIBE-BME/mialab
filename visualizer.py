@@ -9,7 +9,8 @@ class NiftiImageViewer:
         self.image_pp = image_pp
         self.image_array1 = sitk.GetArrayFromImage(self.image_raw)
         self.image_array2 = sitk.GetArrayFromImage(self.image_pp)
-        self.axis = 0 # coronal, axial, saggital
+        self.axis = 0  # Axial
+        self.axis_labels = ["Axial", "Coronal", "Sagittal"]
         
         # Verify both images have the same dimensions
         if self.image_array1.shape != self.image_array2.shape:
@@ -27,7 +28,7 @@ class NiftiImageViewer:
         print(f"Image 1 and Image 2 loaded with dimensions: {self.image_array1.shape}")
         print(f"Size: {self.size}, Spacing: {self.spacing}, Origin: {self.origin}")
         print(f"Orientation matrix: {self.orientation}")
-        print("Use mousewheel to scroll through slices. Press 'space' and then scroll to change the axis (coronal, axial, saggital). You can only cycle through them.")
+        print("Use mousewheel to scroll through slices. Use left/right arrows to change the axis (coronal, axial, sagittal).")
     
     def display(self):
         """Interactive display of the two images."""
@@ -37,6 +38,9 @@ class NiftiImageViewer:
         self.ax2.set_title(f"Image 2 - Slice {self.current_slice}")
         self.ax1.axis('off')
         self.ax2.axis('off')
+
+        # Set the initial axis display
+        self.fig.suptitle(f"Current Axis: {self.axis_labels[self.axis]}")
 
         # Display the initial slices
         if self.axis == 0:
@@ -83,12 +87,17 @@ class NiftiImageViewer:
         self.update_display()
 
     def on_keypress(self, event):
-        if event.key == ' ':
-            print("Changing axis")
-            self.axis += 1
-            if self.axis % 3 == 0:
-                self.axis = 0
-            self.current_slice = self.image_array1.shape[self.axis] // 2
+        """Handle key press events for switching axes."""
+        if event.key == 'right':  # Move to the next axis
+            self.axis = (self.axis + 1) % 3
+        elif event.key == 'left':  # Move to the previous axis
+            self.axis = (self.axis - 1) % 3
+        else:
+            return  # Ignore other keys
+
+        print(f"Changing axis to {self.axis} ({self.axis_labels[self.axis]})")
+        self.current_slice = self.image_array1.shape[self.axis] // 2
+        self.update_display()
 
     def update_display(self):
         """Update the image display for the current slice."""
@@ -101,6 +110,7 @@ class NiftiImageViewer:
         if self.axis == 2:
             self.im_display1.set_data(self.image_array1[:,:,self.current_slice])
             self.im_display2.set_data(self.image_array2[:,:,self.current_slice])
+        self.fig.suptitle(f"Current Axis: {self.axis_labels[self.axis]}")
         self.ax1.set_title(f"Image 1 - Slice {self.current_slice}")
         self.ax2.set_title(f"Image 2 - Slice {self.current_slice}")
         self.fig.canvas.draw_idle()
@@ -109,14 +119,13 @@ class NiftiImageViewer:
 # Example usage
 if __name__ == "__main__":
     from mialab.filtering.postprocessing import ImagePostProcessing
-    filepath1 = "mia-result/2024-11-19-17-56-35/117122_SEG.mha"  # Replace with the first image file path
-    filepath2 = "mia-result/2024-11-19-17-56-35/117122_SEG.mha"  # Replace with the second image file path
+    filepath1 = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/117122_SEG.mha"  # Replace with the first image file path
+    filepath2 = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/117122_SEG.mha"  # Replace with the second image file path
 
     raw = sitk.ReadImage(filepath1)
     pp = sitk.ReadImage(filepath2)
 
     # Add evaluation.
-    # Maybe add other views.
     processor = ImagePostProcessing()
     pp = processor.execute(pp)
 

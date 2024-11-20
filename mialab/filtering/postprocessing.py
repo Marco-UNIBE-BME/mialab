@@ -37,36 +37,45 @@ class ImagePostProcessing(pymia_fltr.Filter):
         """
 
         # todo: replace this filter by a post-processing - or do we need post-processing at all?
-        # if params is None:
-        #     raise ValueError('Parameters for DenseCRF are required for post-processing.')
-        prepost:PrePostProcessing = PrePostProcessing()
+
+        prepost = PrePostProcessing()
         morph = MorphologicalOpeningClosing()
 
-        # Step 1 split image into labels
+        # Step 1: Split image into labels
         data = prepost.init(image)
         prepost.get_label_binary_images(image, data)
         #prepost.define_kernel_sizes(data)
+
+        if not data:
+            raise ValueError("No labels found in the image for post-processing.")
 
         output_image = sitk.Image(image.GetSize(), sitk.sitkUInt8)
         output_image.CopyInformation(image)
 
         for label in data.keys():
-            processed_image = morph.execute(data[label][BINARY_IMAGE_KEY])
-            data[label][OP_CL_IMAGE_KEY] = processed_image
-            output_image = sitk.Mask(image=output_image, maskImage=sitk.Cast(sitk.BinaryNot(processed_image), sitk.sitkUInt8), outsideValue=int(label))
+            if label == 0:  # Skip the background label
+                continue
+        if BINARY_IMAGE_KEY not in data[label]:
+            raise KeyError(f"Key '{BINARY_IMAGE_KEY}' missing for label {label}.")
+        processed_image = morph.execute(data[label][BINARY_IMAGE_KEY])
+        data[label][OP_CL_IMAGE_KEY] = processed_image
+        output_image = sitk.Mask(
+            image=output_image,
+            maskImage=sitk.Cast(sitk.BinaryNot(processed_image), sitk.sitkUInt8),
+            outsideValue=int(label)
+        )
 
-        print(data[0][OPENING_KERNEL_SIZE])
+        #print(data[0][OPENING_KERNEL_SIZE])
 
 
+        # Step 2 to N: Apply our post-processing on splited images
 
-        # Step 2 to N our post on split mages
+        # Step N+1: Merge them together
 
-        # N+1 Merge them together
-
-        # Post post processing.
+        # Step N+2: Post post processing
 
 
-        warnings.warn('No post-processing implemented. Can you think about something?')
+        # warnings.warn('No post-processing implemented. Can you think about something?')
 
         return image
 
