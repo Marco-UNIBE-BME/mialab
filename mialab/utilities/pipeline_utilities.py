@@ -290,19 +290,8 @@ def post_process(img: structure.BrainImage, segmentation: sitk.Image, probabilit
 
     # construct pipeline
     pipeline = fltr.FilterPipeline()
-    if kwargs.get('simple_post', False):
+    if kwargs.get('our_post', False):
         pipeline.add_filter(fltr_postp.ImagePostProcessing())
-
-    if kwargs.get('morphological_post', False):  # José: New morphological opening and closing post-processing
-        closing_radius = kwargs.get('closing_radius', 1)  # Default closing radius
-        opening_radius = kwargs.get('opening_radius', 1)  # Default opening radius
-        pipeline.add_filter(fltr_postp.MorphologicalOpeningClosing(closing_radius, opening_radius))
-
-    # if kwargs.get('crf_post', False):
-    #     pipeline.add_filter(fltr_postp.DenseCRF())
-    #     pipeline.set_param(fltr_postp.DenseCRFParams(img.images[structure.BrainImageTypes.T1w],
-    #                                                  img.images[structure.BrainImageTypes.T2w],
-    #                                                  probability), len(pipeline.filters) - 1)
 
     return pipeline.execute(segmentation)
 

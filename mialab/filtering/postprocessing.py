@@ -22,7 +22,6 @@ class ImagePostProcessing(pymia_fltr.Filter):
     def __init__(self):
         """Initializes a new instance of the ImagePostProcessing class."""
         super().__init__()
-        # self.dense_crf:DenseCRF = DenseCRF()
 
     def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
         """Registers an image.
@@ -36,10 +35,8 @@ class ImagePostProcessing(pymia_fltr.Filter):
         """
 
         # todo: replace this filter by a post-processing - or do we need post-processing at all?
-        # if params is None:
-        #     raise ValueError('Parameters for DenseCRF are required for post-processing.')
-        prepost:PrePostProcessing = PrePostProcessing()
 
+        prepost:PrePostProcessing = PrePostProcessing()
 
         """Step 1: Initialize a data strcuture and populate it with individual binary images for all labels."""
         data:dict[dict] = prepost.init_data_structure(image) # NOTE: We omit label 0. The background is not being post-processed.
@@ -49,11 +46,12 @@ class ImagePostProcessing(pymia_fltr.Filter):
         prepost.calc_oc_kernels(data)
 
         """Step 3: Application of our 'per-label' post-processing."""
-        morph = MorphologicalOpeningClosing()
+        morph = MorphologicalOperations()
         # return morph.binary_fill_hole(data[1][BINARY_IMAGE_KEY])
 
-        for label in data.keys():
-            data[label][PROCESSED_IM_KEY] = morph.apply_closing(data[label][BINARY_IMAGE_KEY], kernel_type=sitk.sitkCross)
+        # Closing
+        # for label in data.keys():
+        #     data[label][PROCESSED_IM_KEY] = morph.closing(data[label][BINARY_IMAGE_KEY], kernel_type=sitk.sitkCross)
 
         # Black hat transform
         # for label in data.keys():
@@ -68,11 +66,11 @@ class ImagePostProcessing(pymia_fltr.Filter):
         # data[2][BINARY_IMAGE_KEY] = eroded_gray_matter
 
         # Opening and Closing
-        # for label in data.keys():
-        #     processed_image:sitk.Image = morph.closing_opening(image=data[label][BINARY_IMAGE_KEY],
-        #                                                closing_radius=data[label][CLOSING_KERNEL_SIZE],
-        #                                                opening_radius=data[label][OPENING_KERNEL_SIZE])
-        #     data[label][PROCESSED_IM_KEY] = processed_image
+        for label in data.keys():
+            processed_image:sitk.Image = morph.closing_opening(image=data[label][BINARY_IMAGE_KEY],
+                                                       closing_radius=data[label][CLOSING_KERNEL_SIZE],
+                                                       opening_radius=data[label][OPENING_KERNEL_SIZE])
+            data[label][PROCESSED_IM_KEY] = processed_image
 
         # Dilation
         # dilated_gray_matter = morph.dilation(image=data[2][PROCESSED_IM_KEY])
@@ -123,11 +121,67 @@ class PrePostProcessing:
             binary_image = sitk.Equal(image, int(label))
             data[label][BINARY_IMAGE_KEY] = binary_image
 
-    def calc_oc_kernels(self, data:dict) -> None:
-        """This function defines the opening and closing kernel sizes per label image. (Data driven)"""
+    # def calc_oc_kernels(self, data:dict) -> None:
+    #     """This function defines the opening and closing kernel sizes per label image. (Data driven)"""
+    #     for label in data.keys():
+    #         data[label][OPENING_KERNEL_SIZE] = 1 # TODO: Make this data driven
+    #         data[label][CLOSING_KERNEL_SIZE] = 1 # TODO: Make this data driven
+
+    def calc_oc_kernels(self, data: dict) -> None:
+        """
+        Calculates the opening and closing kernel sizes for each label based on structural complexity and anatomical structure.
+
+        Args:
+            data (dict): A dictionary where keys are labels and values are dicts containing binary images
+                         and other label-specific information.
+        """
         for label in data.keys():
-            data[label][OPENING_KERNEL_SIZE] = 1 # TODO: Make this data driven
-            data[label][CLOSING_KERNEL_SIZE] = 1 # TODO: Make this data driven
+            if BINARY_IMAGE_KEY not in data[label]:
+                continue
+
+            # Access the binary mask for the label
+            binary_image = data[label][BINARY_IMAGE_KEY]
+            binary_array = sitk.GetArrayFromImage(binary_image)
+
+            # Skip empty labels
+            if np.sum(binary_array) == 0:
+                data[label][OPENING_KERNEL_SIZE] = 1
+                data[label][CLOSING_KERNEL_SIZE] = 1
+                print(f"Label {label}: Empty label, skipping.")
+                continue
+
+            # Calculate surface-to-volume ratio and fragmentation
+            contour_image = sitk.LabelContour(binary_image)
+            contour_array = sitk.GetArrayFromImage(contour_image)
+            surface_voxels = np.sum(contour_array)
+            total_voxels = np.sum(binary_array)
+            surface_to_volume_ratio = surface_voxels / total_voxels if total_voxels > 0 else 0
+
+            connected_components = sitk.ConnectedComponent(binary_image)
+            num_fragments = len(np.unique(sitk.GetArrayFromImage(connected_components))) - 1
+
+            # Assign kernel sizes based on calculated features
+            if surface_to_volume_ratio >= 0.30 and num_fragments > 750:
+                # High complexity and fragmentation -> small kernel size
+                opening_kernel_size = 1
+                closing_kernel_size = 1
+            elif surface_to_volume_ratio < 0.30 and num_fragments < 500:
+                # Low complexity and fragmentation -> big kernel size
+                opening_kernel_size = 3
+                closing_kernel_size = 3
+            else:
+                # Intermediate complexity and fragmentation -> medium kernel size
+                opening_kernel_size = 2
+                closing_kernel_size = 2
+
+            # Debugging: Print metrics and kernel sizes
+            print(f"Label {label}: Surface-to-Volume Ratio = {surface_to_volume_ratio:.2f}, "
+                  f"Fragments = {num_fragments}, "
+                  f"OPENING_KERNEL_SIZE = {opening_kernel_size}, CLOSING_KERNEL_SIZE = {closing_kernel_size}")
+
+            # Assign kernel sizes to the data structure
+            data[label][OPENING_KERNEL_SIZE] = opening_kernel_size
+            data[label][CLOSING_KERNEL_SIZE] = closing_kernel_size
 
     def rank_labels_amount_voxels(self, prediction_image:sitk.Image, data:dict) -> None:
         from pymia.filtering.postprocessing import LargestNConnectedComponents
@@ -136,8 +190,8 @@ class PrePostProcessing:
         # lncc = LargestNConnectedComponents(number_of_components=n, consecutive_component_labels=True)
         # im:sitk.Image = lncc.execute(image=prediction_image)
 
-class MorphologicalOpeningClosing():  # José: New morphological opening and closing post-processing
-    """Represents a morphological opening and closing filter."""
+class MorphologicalOperations():  # José: New morphological opening and closing post-processing
+    """Represents a collection of morphological operation filters."""
 
     def __init__(self):
         super().__init__()
@@ -167,18 +221,6 @@ class MorphologicalOpeningClosing():  # José: New morphological opening and clo
 
         # self.kernels = [sitk.sitkBall, sitk.sitkBox, sitk.sitkCross, sitk.sitkAnnulus]
 
-    def apply_closing(self, image: sitk.Image, closing_radius:int=1, kernel_type:int=sitk.sitkBall) -> sitk.Image:
-        """Apply morphological closing to an image."""
-        self._closing_filter.SetKernelRadius(closing_radius)
-        self._closing_filter.SetKernelType(kernel_type)
-        return self._closing_filter.Execute(image)
-
-    def apply_opening(self, image: sitk.Image, opening_radius:int=1, kernel_type:int=sitk.sitkBall) -> sitk.Image:
-        """Apply morphological opening to an image."""
-        self._opening_filter.SetKernelRadius(opening_radius)
-        self._opening_filter.SetKernelType(kernel_type)
-        return self._opening_filter.Execute(image)
-
     def erosion(self, image:sitk.Image, erosion_radius:int=1) -> sitk.Image:
         """Apply erosion operation to an image."""
         self._erosion_filter.SetKernelRadius(erosion_radius)
@@ -190,10 +232,22 @@ class MorphologicalOpeningClosing():  # José: New morphological opening and clo
         self._dilation_filter.SetKernelRadius(dilation_radius)
         return self._dilation_filter.Execute(image)
 
+    def closing(self, image: sitk.Image, closing_radius:int=1, kernel_type:int=sitk.sitkBall) -> sitk.Image:
+        """Apply morphological closing to an image."""
+        self._closing_filter.SetKernelRadius(closing_radius)
+        self._closing_filter.SetKernelType(kernel_type)
+        return self._closing_filter.Execute(image)
+
+    def opening(self, image: sitk.Image, opening_radius:int=1, kernel_type:int=sitk.sitkBall) -> sitk.Image:
+        """Apply morphological opening to an image."""
+        self._opening_filter.SetKernelRadius(opening_radius)
+        self._opening_filter.SetKernelType(kernel_type)
+        return self._opening_filter.Execute(image)
+
     def closing_opening(self, image: sitk.Image, closing_radius:int, opening_radius:int, kernel_type:int=sitk.sitkBall) -> sitk.Image:
         """Execute the morphological opening and closing operations."""
-        im = self.apply_closing(image, closing_radius, kernel_type)
-        im = self.apply_opening(image, opening_radius, kernel_type)
+        im = self.closing(image, closing_radius, kernel_type)
+        im = self.opening(image, opening_radius, kernel_type)
         return im
 
     def binary_fill_hole(self, image:sitk.Image) -> sitk.Image:
