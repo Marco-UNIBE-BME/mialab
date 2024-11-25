@@ -36,6 +36,7 @@ LOADING_KEYS = [structure.BrainImageTypes.T1w,
                 structure.BrainImageTypes.BrainMask,
                 structure.BrainImageTypes.RegistrationTransform]  # the list of data we will load
 
+
 def postprocess_only(path_inference_output:str, result_dir:str):
     """This function loads inference results and applies post-processing to them"""
 
@@ -52,8 +53,7 @@ def postprocess_only(path_inference_output:str, result_dir:str):
 
     print("Finished loading and init evaluator. Post-process start.")
 
-    post_process_params = {'simple_post': True}
-    # post_process_params = {'crf_post': True}
+    post_process_params = {'our_post': True}
     images_post_processed = putil.post_process_batch(images_test, images_prediction, images_probabilities,
                                                      post_process_params, multi_process=True)
 
@@ -193,15 +193,10 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
     with open(output_name, 'wb') as f:
         export_data:tuple = (images_test, images_prediction, images_probabilities)
         # pickle.dump(export_data, f)
-        joblib.dump(export_data, f, compress=3) # Could compress up to 9.
+        joblib.dump(export_data, f, compress=3)  # Could compress up to 9.
 
     # post-process segmentation and evaluate with post-processing (José: Our task)
-    #post_process_params = {'simple_post': True}
-    post_process_params = {
-        'morphological_post': True,  # José: Opening & closing post-processing
-        'closing_radius': 1,
-        'opening_radius': 1
-    }
+    post_process_params = {'our_post': True}
     #post_process_params = {'crf_post': True}
     images_post_processed = putil.post_process_batch(images_test, images_prediction, images_probabilities,
                                                      post_process_params, multi_process=True)
