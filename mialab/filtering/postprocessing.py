@@ -49,7 +49,7 @@ class ImagePostProcessing(pymia_fltr.Filter):
         prepost.calc_oc_kernels(data)
 
         """Step 3: Application of our 'per-label' post-processing."""
-        morph = MorphologicalOpeningClosing()
+        morph = MorphologicalFilterLibrary()
         # return morph.binary_fill_hole(data[1][BINARY_IMAGE_KEY])
 
         for label in data.keys():
@@ -136,8 +136,10 @@ class PrePostProcessing:
         # lncc = LargestNConnectedComponents(number_of_components=n, consecutive_component_labels=True)
         # im:sitk.Image = lncc.execute(image=prediction_image)
 
-class MorphologicalOpeningClosing():  # José: New morphological opening and closing post-processing
-    """Represents a morphological opening and closing filter."""
+class MorphologicalFilterLibrary: 
+    """
+    This class holds different morphological filters from the scikit environment and presets them for experiments in the mialab postprocessing pipeline.
+    """
 
     def __init__(self):
         super().__init__()
@@ -199,7 +201,7 @@ class MorphologicalOpeningClosing():  # José: New morphological opening and clo
     def binary_fill_hole(self, image:sitk.Image) -> sitk.Image:
         # self.binary_hole_filling_filter.SetFullyConnected(True)
         # print(self.binary_hole_filling_filter.GetFullyConnected())
-        return self._binary_hole_filling_filter.Execute(im)
+        return self._binary_hole_filling_filter.Execute(image)
     
     def white_top_hat(self, image:sitk.Image) -> sitk.Image:
         return self._white_top_hat_filter.Execute(image)
