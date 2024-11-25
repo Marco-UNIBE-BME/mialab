@@ -46,7 +46,7 @@ class ImagePostProcessing(pymia_fltr.Filter):
         prepost.calc_oc_kernels(data)
 
         """Step 3: Application of our 'per-label' post-processing."""
-        morph = MorphologicalFilterLibrary()
+        morph = MorphologicalOperations()
         # return morph.binary_fill_hole(data[1][BINARY_IMAGE_KEY])
 
         # Closing
