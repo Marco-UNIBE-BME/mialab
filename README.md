@@ -53,7 +53,7 @@ python pipeline.py --data_atlas_dir "./dataset/atlas" --data_train_dir "./datase
 After execution the pipeline script will create an output folder called "mia-results".
 
 ```bash
-python pipeline.py --postprocess "inferences\2024-11-10-23-09-30.joblib"
+python pipeline.py --postprocess "inferences/2024-11-10-23-09-30.joblib"
 ```
 
 NOTE: This folder was added to the .gitignore.
