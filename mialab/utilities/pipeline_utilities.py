@@ -195,6 +195,16 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     transform = sitk.ReadTransform(path_to_transform)
     img = structure.BrainImage(id_, path, img, transform)
 
+    # José: Apply denoising if specified
+    if kwargs.get('denoising_pre', False):
+        denoising_filter = fltr_prep.DenoisingFilter(
+            method=kwargs.get('denoising_method', 'gaussian'),
+            sigma=kwargs.get('denoising_sigma', 1.5),
+            radius=kwargs.get('denoising_radius', 2)
+        )
+        img.images[structure.BrainImageTypes.T1w] = denoising_filter.execute(img.images[structure.BrainImageTypes.T1w])
+        img.images[structure.BrainImageTypes.T2w] = denoising_filter.execute(img.images[structure.BrainImageTypes.T2w])
+
     # construct pipeline for brain mask registration
     # we need to perform this before the T1w and T2w pipeline because the registered mask is used for skull-stripping
     pipeline_brain_mask = fltr.FilterPipeline()
