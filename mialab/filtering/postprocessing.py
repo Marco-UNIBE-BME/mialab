@@ -71,17 +71,24 @@ class ImagePostProcessing(pymia_fltr.Filter):
 
         """Uncomment here to have the opening and closing."""
         # Opening and Closing
-        for label in data.keys():
-            processed_image:sitk.Image = morph.closing_opening(image=data[label][BINARY_IMAGE_KEY],
-                                                       closing_radius=data[label][CLOSING_KERNEL_SIZE],
-                                                       opening_radius=data[label][OPENING_KERNEL_SIZE],
-                                                       kernel_type=sitk.sitkBall)
-            data[label][PROCESSED_IM_KEY] = processed_image
+        # for label in data.keys():
+        #     processed_image:sitk.Image = morph.closing_opening(image=data[label][BINARY_IMAGE_KEY],
+        #                                                closing_radius=data[label][CLOSING_KERNEL_SIZE],
+        #                                                opening_radius=data[label][OPENING_KERNEL_SIZE],
+        #                                                kernel_type=sitk.sitkBall)
+        #     data[label][PROCESSED_IM_KEY] = processed_image
 
         """Uncomment here to get median filtering only."""
+        medianf = sitk.MedianImageFilter()
+        medianf.SetRadius(3)
         # Median filtering
-        # medianf = sitk.MedianImageFilter()
-        # medianf.SetRadius(1)
+        for label in data.keys():
+            processed_image = medianf.Execute(data[label][BINARY_IMAGE_KEY])
+            processed_image = utils.downsample_volume(processed_image, orig_image)
+            data[label][PROCESSED_IM_KEY] = processed_image
+
+        # output_image = medianf.Execute(image)
+        # return utils.downsample_volume(output_image, orig_image)
         # return medianf.Execute(image)
 
         # for label in data.keys():
@@ -108,7 +115,7 @@ class ImagePostProcessing(pymia_fltr.Filter):
 
         for label in data.keys():
             processed_image = data[label][PROCESSED_IM_KEY]
-            processed_image = utils.downsample_volume(processed_image, orig_image)
+            # processed_image = utils.downsample_volume(processed_image, orig_image)
             label_mask = sitk.Mask(image = sitk.Cast(output_image == 0, sitk.sitkUInt8) * label,
                                      maskImage=processed_image,
                                      outsideValue=0)
@@ -126,18 +133,18 @@ class ImagePostProcessing(pymia_fltr.Filter):
 
         """STep 5: Apply post-post-processing."""
         # Create a binary mask of the locations where the output_image is 0
-        zero_mask = sitk.Cast(output_image == 0, sitk.sitkUInt8)
+        # zero_mask = sitk.Cast(output_image == 0, sitk.sitkUInt8)
 
-        # Combine original_image values with output_image values where zero_mask is True
-        masked_output_image = sitk.Mask(
-            image=orig_image,
-            maskImage=zero_mask,
-            outsideValue=0
-        )
+        # # Combine original_image values with output_image values where zero_mask is True
+        # masked_output_image = sitk.Mask(
+        #     image=orig_image,
+        #     maskImage=zero_mask,
+        #     outsideValue=0
+        # )
 
-        # Replace the values in output_image where zero_mask is 1
-        output_image = sitk.Cast(output_image, orig_image.GetPixelID())
-        output_image += masked_output_image
+        # # Replace the values in output_image where zero_mask is 1
+        # output_image = sitk.Cast(output_image, orig_image.GetPixelID())
+        # output_image += masked_output_image
         # mf = sitk.MedianImageFilter()
         # mf.SetRadius([1,1,1])
         # output_image =  mf.Execute(output_image)
@@ -284,12 +291,12 @@ class PostProcessingUtils:
                 closing_kernel_size = 1
             elif surface_to_volume_ratio < 0.30 and num_fragments < 500:
                 # Low complexity and fragmentation -> big kernel size
-                opening_kernel_size = 3
-                closing_kernel_size = 3
+                opening_kernel_size = 5
+                closing_kernel_size = 5
             else:
                 # Intermediate complexity and fragmentation -> medium kernel size
-                opening_kernel_size = 2
-                closing_kernel_size = 2
+                opening_kernel_size = 3
+                closing_kernel_size = 3
 
             # Debugging: Print metrics and kernel sizes
             print(f"Label {label}: Surface-to-Volume Ratio = {surface_to_volume_ratio:.2f}, "
