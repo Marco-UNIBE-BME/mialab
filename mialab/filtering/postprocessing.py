@@ -42,7 +42,7 @@ class ImagePostProcessing(pymia_fltr.Filter):
         """Step 1: Initialize a data strcuture and populate it with individual binary images for all labels."""
         data:dict[dict] = utils.init_data_structure(image) # NOTE: We omit label 0. The background is not being post-processed.
         orig_image = image
-        # image = utils.upsample_volume(image, 2)
+        image = utils.upsample_volume(image, 2)
         utils.split_image(image, data)
         # utils.calculate_contours(data)
 
@@ -71,11 +71,12 @@ class ImagePostProcessing(pymia_fltr.Filter):
 
         """Uncomment here to have the opening and closing."""
         # Opening and Closing
-        # for label in data.keys():
-        #     processed_image:sitk.Image = morph.closing_opening(image=data[label][BINARY_IMAGE_KEY],
-        #                                                closing_radius=data[label][CLOSING_KERNEL_SIZE],
-        #                                                opening_radius=data[label][OPENING_KERNEL_SIZE])
-        #     data[label][PROCESSED_IM_KEY] = processed_image
+        for label in data.keys():
+            processed_image:sitk.Image = morph.closing_opening(image=data[label][BINARY_IMAGE_KEY],
+                                                       closing_radius=data[label][CLOSING_KERNEL_SIZE],
+                                                       opening_radius=data[label][OPENING_KERNEL_SIZE],
+                                                       kernel_type=sitk.sitkBall)
+            data[label][PROCESSED_IM_KEY] = processed_image
 
         """Uncomment here to get median filtering only."""
         # Median filtering
@@ -92,9 +93,7 @@ class ImagePostProcessing(pymia_fltr.Filter):
         #     # hole_filled_image = hole_filling_filter.Execute(binary_image)
             
         #     # Thresholded
-        #     # hole_filled_image = morph.fill_small_holes_2d(binary_image, 200)
-
-
+        #     hole_filled_image = morph.fill_small_holes_2d(binary_image, 200)
             
         #     # Update the processed image
         #     data[label][PROCESSED_IM_KEY] = hole_filled_image
@@ -104,11 +103,12 @@ class ImagePostProcessing(pymia_fltr.Filter):
         # data[2][PROCESSED_IM_KEY] = dilated_gray_matter
 
         """Step 4: Stitching our processed per label images back into one image."""
-        output_image = sitk.Image(image.GetSize(), sitk.sitkUInt8)
-        output_image.CopyInformation(image)
+        output_image = sitk.Image(orig_image.GetSize(), sitk.sitkUInt8)
+        output_image.CopyInformation(orig_image)
 
         for label in data.keys():
             processed_image = data[label][PROCESSED_IM_KEY]
+            processed_image = utils.downsample_volume(processed_image, orig_image)
             label_mask = sitk.Mask(image = sitk.Cast(output_image == 0, sitk.sitkUInt8) * label,
                                      maskImage=processed_image,
                                      outsideValue=0)
@@ -125,6 +125,23 @@ class ImagePostProcessing(pymia_fltr.Filter):
         #     output_image += labeled_contour
 
         """STep 5: Apply post-post-processing."""
+        # Create a binary mask of the locations where the output_image is 0
+        zero_mask = sitk.Cast(output_image == 0, sitk.sitkUInt8)
+
+        # Combine original_image values with output_image values where zero_mask is True
+        masked_output_image = sitk.Mask(
+            image=orig_image,
+            maskImage=zero_mask,
+            outsideValue=0
+        )
+
+        # Replace the values in output_image where zero_mask is 1
+        output_image = sitk.Cast(output_image, orig_image.GetPixelID())
+        output_image += masked_output_image
+        # mf = sitk.MedianImageFilter()
+        # mf.SetRadius([1,1,1])
+        # output_image =  mf.Execute(output_image)
+        # return  mf.Execute(output_image)
         # output_image = utils.downsample_volume(output_image, orig_image)
         # warnings.warn('No post-processing implemented. Can you think about something?')
 
@@ -267,12 +284,12 @@ class PostProcessingUtils:
                 closing_kernel_size = 1
             elif surface_to_volume_ratio < 0.30 and num_fragments < 500:
                 # Low complexity and fragmentation -> big kernel size
-                opening_kernel_size = 1#3
-                closing_kernel_size = 1#3
+                opening_kernel_size = 3
+                closing_kernel_size = 3
             else:
                 # Intermediate complexity and fragmentation -> medium kernel size
-                opening_kernel_size = 1#2
-                closing_kernel_size = 1#2
+                opening_kernel_size = 2
+                closing_kernel_size = 2
 
             # Debugging: Print metrics and kernel sizes
             print(f"Label {label}: Surface-to-Volume Ratio = {surface_to_volume_ratio:.2f}, "
@@ -347,7 +364,7 @@ class MorphologicalOperations():  # José: New morphological opening and closing
     def closing_opening(self, image: sitk.Image, closing_radius:int, opening_radius:int, kernel_type:int=sitk.sitkBall) -> sitk.Image:
         """Execute the morphological opening and closing operations."""
         im = self.closing(image, closing_radius, kernel_type)
-        im = self.opening(image, opening_radius, kernel_type)
+        im = self.opening(im, opening_radius, kernel_type)
         return im
 
     def binary_fill_hole(self, image:sitk.Image) -> sitk.Image:
@@ -362,7 +379,7 @@ class MorphologicalOperations():  # José: New morphological opening and closing
         return self._black_top_hat_filter.Execute(image)
 
 
-    def fill_small_holes_2d(binary_image, size_threshold):
+    def fill_small_holes_2d(self, binary_image, size_threshold):
         hole_filled_image = sitk.Image(binary_image.GetSize(), sitk.sitkUInt8)
         hole_filled_image.CopyInformation(binary_image)
         
