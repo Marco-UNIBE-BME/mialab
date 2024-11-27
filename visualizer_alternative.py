@@ -179,7 +179,7 @@ class NiftiImageViewer:
 
 if __name__ == "__main__":
     filepath1 = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/117122_SEG.mha"  # Raw segmentation
-    filepath2 = "mia-result/2024-11-24-18-30-19/117122_SEG-PP.mha"  # Post-processed segmentation
+    filepath2 = "mia-result/2024-11-27-20-44-34/117122_SEG-PP.mha"  # Post-processed segmentation
 
     raw = sitk.ReadImage(filepath1)
     pp = sitk.ReadImage(filepath2)

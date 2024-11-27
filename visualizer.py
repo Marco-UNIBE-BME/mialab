@@ -109,7 +109,7 @@ class NiftiImageViewer:
 # Example usage
 if __name__ == "__main__":
     from mialab.filtering.postprocessing import ImagePostProcessing
-    filepath1 = "mia-result/2024-11-19-17-56-35/117122_SEG.mha"  # Replace with the first image file path
+    filepath1 = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/117122_SEG.mha"  # Replace with the first image file path
     # filepath2 = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/117122_SEG.mha"  # Replace with the second image file path
 
     raw = sitk.ReadImage(filepath1)
