@@ -166,7 +166,7 @@ class NiftiImageViewer:
         pp_dice_str = ", ".join([f"{label} ({value:.3f})" for label, value in self.dice_values_pp.items()])
 
 
-# Update the figure title to show the current axis and DICE values
+        # Update the figure title to show the current axis and DICE values
         self.fig.suptitle(
             f"CURRENT AXIS: {self.axis_labels[self.axis]}\n"
             f"RAW DICES: {raw_dice_str}\n"

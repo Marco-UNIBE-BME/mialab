@@ -8,6 +8,7 @@ import numpy as np
 import pymia.filtering
 import pymia.filtering.filter as pymia_fltr
 import SimpleITK as sitk
+import math
 
 # Our dictionary keys
 BINARY_IMAGE_KEY:str = 'image'
@@ -320,6 +321,7 @@ class PostProcessingUtils:
             surface_to_volume_ratio = self.get_surface_to_volume(binary_image)
             num_fragments = self.get_num_fragments(binary_image)
 
+            # Conditional approach:
             # Assign kernel sizes based on calculated features
             if surface_to_volume_ratio >= 0.30 and num_fragments > 750:  # With UpSamp: 8000 else 750
                 # High complexity and fragmentation -> small kernel size
@@ -333,6 +335,33 @@ class PostProcessingUtils:
                 # Intermediate complexity and fragmentation -> medium kernel size
                 closing_kernel_size = 0
                 opening_kernel_size = 2  # With UpSamp: 3 else 2
+
+            # # Heuristic approach:
+            # # Sigmoid steepness parameter
+            # k = 10  # Controls the smoothness of the transitions
+            #
+            # # Safe exponential to avoid overflow
+            # def safe_exp(x):
+            #     return math.exp(max(-700, min(700, x)))
+            #
+            # # High complexity contribution
+            # high_score = (
+            #         1 / (1 + safe_exp(-k * (surface_to_volume_ratio - 0.30))) *
+            #         1 / (1 + safe_exp(-k * (num_fragments - 750)))
+            # )
+            #
+            # # Low complexity contribution
+            # low_score = (
+            #         (1 - 1 / (1 + safe_exp(-k * (surface_to_volume_ratio - 0.30)))) *
+            #         (1 - 1 / (1 + safe_exp(-k * (num_fragments - 500))))
+            # )
+            #
+            # # Combine scores into kernel size
+            # opening_kernel_size = 1 + low_score - high_score
+            #
+            # # Round to nearest integer and clip to valid range
+            # opening_kernel_size = max(1, min(3, round(opening_kernel_size)))
+            # closing_kernel_size = 0
 
             # Debugging: Print metrics and kernel sizes
             print(f"Label {label}: Surface-to-Volume Ratio = {surface_to_volume_ratio:.2f}, "
