@@ -327,7 +327,7 @@ class PostProcessingUtils:
                 # High complexity and fragmentation -> small kernel size
                 closing_kernel_size = 0
                 opening_kernel_size = 1  # With UpSamp2: 1 else 1
-            elif surface_to_volume_ratio < 0.30 and num_fragments < 500:  # With UpSamp2: 1000 else 500
+            elif surface_to_volume_ratio < 0.30 or num_fragments < 400:  # With UpSamp2: 1000 else 400
                 # Low complexity and fragmentation -> big kernel size
                 closing_kernel_size = 0
                 opening_kernel_size = 3  # With UpSamp2: 5 else 3
@@ -366,11 +366,11 @@ class PostProcessingUtils:
             # Debugging: Print metrics and kernel sizes
             print(f"Label {label}: Surface-to-Volume Ratio = {surface_to_volume_ratio:.2f}, "
                   f"Fragments = {num_fragments}, "
-                  f"OPENING_KERNEL_SIZE = {opening_kernel_size}, CLOSING_KERNEL_SIZE = {closing_kernel_size}")
+                  f"CLOSING_KERNEL_SIZE = {closing_kernel_size}, OPENING_KERNEL_SIZE = {opening_kernel_size}")
 
             # Assign kernel sizes to the data structure
-            data[label][OPENING_KERNEL_SIZE] = opening_kernel_size
             data[label][CLOSING_KERNEL_SIZE] = closing_kernel_size
+            data[label][OPENING_KERNEL_SIZE] = opening_kernel_size
 
     def rank_labels_amount_voxels(self, prediction_image:sitk.Image, data:dict) -> None:
         from pymia.filtering.postprocessing import LargestNConnectedComponents
