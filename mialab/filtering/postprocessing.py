@@ -55,27 +55,27 @@ class ImagePostProcessing(pymia_fltr.Filter):
         """Step 3: Application of our 'per-label' post-processing."""
         morph = MorphologicalOperations()
 
-        # Erosion:
+        """Erosion"""
         # eroded_gray_matter = morph.erosion(image=data[2][BINARY_IMAGE_KEY])
         # data[2][BINARY_IMAGE_KEY] = eroded_gray_matter
 
-        # Dilation:
+        """Dilation"""
         # dilated_gray_matter = morph.dilation(image=data[2][PROCESSED_IM_KEY])
         # data[2][PROCESSED_IM_KEY] = dilated_gray_matter
 
-        # Closing:
+        """Closing"""
         # for label in data.keys():
         #     data[label][PROCESSED_IM_KEY] = morph.closing(image=data[label][BINARY_IMAGE_KEY],
         #                                                   closing_radius=data[label][CLOSING_KERNEL_SIZE],
         #                                                   kernel_type=sitk.sitkBall)
 
-        # Opening:
+        """Opening"""
         # for label in data.keys():
         #     data[label][PROCESSED_IM_KEY] = morph.opening(image=data[label][BINARY_IMAGE_KEY],
         #                                                   opening_radius=data[label][OPENING_KERNEL_SIZE],
         #                                                   kernel_type=sitk.sitkBall)
 
-        """Uncomment here to have the Closing and Opening."""
+        """Closing and Opening."""
         # Closing and Opening:
         # for label in data.keys():
         #     processed_image:sitk.Image = morph.closing_opening(image=data[label][BINARY_IMAGE_KEY],
@@ -84,15 +84,15 @@ class ImagePostProcessing(pymia_fltr.Filter):
         #                                                kernel_type=sitk.sitkBall)
         #     data[label][PROCESSED_IM_KEY] = processed_image
 
-        # Black hat transform:
+        """Black hat transform"""
         # for label in data.keys():
         #     data[label][PROCESSED_IM_KEY] = data[label][BINARY_IMAGE_KEY] + morph.black_top_hat(data[label][BINARY_IMAGE_KEY])
 
-        # Hole-Filling:
+        """Hole-Filling"""
         # for label in data.keys():
         #     data[label][PROCESSED_IM_KEY] = morph.binary_fill_hole(data[label][BINARY_IMAGE_KEY])
 
-        # Hole-Filling by Marco:
+        """Hole-Filling 2D"""
         # for label in data.keys():
         #     # Retrieve the binary mask for the label
         #     binary_image = data[label][BINARY_IMAGE_KEY]
@@ -107,16 +107,16 @@ class ImagePostProcessing(pymia_fltr.Filter):
         #     # Update the processed image
         #     data[label][PROCESSED_IM_KEY] = hole_filled_image
 
-        # Opening and Hole-Filling by Marco:
+        """Opening and Hole-Filling 2D"""
         for label in data.keys():
             processed_image = data[label][BINARY_IMAGE_KEY]
             processed_image = morph.opening(image=processed_image,
                                             opening_radius=data[label][OPENING_KERNEL_SIZE],
                                             kernel_type=sitk.sitkBall)
-            # processed_image = morph.fill_small_holes_2d(processed_image, 50)
+            processed_image = morph.fill_small_holes_2d(processed_image, 50)
             data[label][PROCESSED_IM_KEY] = processed_image
 
-        """Uncomment here to get Median filtering only."""
+        """Median filtering"""
         # Median filtering:
         # medianf = sitk.MedianImageFilter()
         # medianf.SetRadius(3)
@@ -129,7 +129,7 @@ class ImagePostProcessing(pymia_fltr.Filter):
         # return utils.downsample_volume(output_image, orig_image)
         # return medianf.Execute(image)
 
-        """Uncomment here to have Opening and Median filtering."""
+        """Opening and Median filtering"""
         # Opening and Median filtering:
         # medianf = sitk.MedianImageFilter()
         # medianf.SetRadius(2)
@@ -164,7 +164,7 @@ class ImagePostProcessing(pymia_fltr.Filter):
 
         #     output_image += labeled_contour
 
-        """STep 5: Apply post-post-processing."""
+        """Step 5: Apply post-post-processing."""
         # Create a binary mask of the locations where the output_image is 0
         # zero_mask = sitk.Cast(output_image == 0, sitk.sitkUInt8)
 
@@ -323,18 +323,18 @@ class PostProcessingUtils:
 
             # Conditional approach:
             # Assign kernel sizes based on calculated features
-            if surface_to_volume_ratio >= 0.30 and num_fragments > 750:  # With UpSamp: 8000 else 750
+            if surface_to_volume_ratio >= 0.30 and num_fragments > 750:  # With UpSamp2: 8000 else 750
                 # High complexity and fragmentation -> small kernel size
                 closing_kernel_size = 0
-                opening_kernel_size = 1  # With UpSamp: 1 else 1
-            elif surface_to_volume_ratio < 0.30 and num_fragments < 500:  # With UpSamp: 1000 else 500
+                opening_kernel_size = 1  # With UpSamp2: 1 else 1
+            elif surface_to_volume_ratio < 0.30 and num_fragments < 500:  # With UpSamp2: 1000 else 500
                 # Low complexity and fragmentation -> big kernel size
                 closing_kernel_size = 0
-                opening_kernel_size = 3  # With UpSamp: 5 else 3
+                opening_kernel_size = 3  # With UpSamp2: 5 else 3
             else:
                 # Intermediate complexity and fragmentation -> medium kernel size
                 closing_kernel_size = 0
-                opening_kernel_size = 2  # With UpSamp: 3 else 2
+                opening_kernel_size = 2  # With UpSamp2: 3 else 2
 
             # # Heuristic approach:
             # # Sigmoid steepness parameter
@@ -449,7 +449,6 @@ class MorphologicalOperations():  # José: New morphological opening and closing
 
     def black_top_hat(self, image:sitk.Image) -> sitk.Image:
         return self._black_top_hat_filter.Execute(image)
-
 
     def fill_small_holes_2d(self, binary_image, size_threshold):
         hole_filled_image = sitk.Image(binary_image.GetSize(), sitk.sitkUInt8)

@@ -243,3 +243,4 @@ xcuserdata/
 *.nii.gz
 *.mha
 /inferences
+/old_visualizers

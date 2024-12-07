@@ -43,44 +43,97 @@ def postprocess_only(path_inference_output:str, result_dir:str):
     with open(path_inference_output, 'rb') as f:
         (images_test, images_prediction, images_probabilities) = joblib.load(f)
 
-    # create a result directory with timestamp
+    # Split the data
+    validation_images_test = images_test[6:9]
+    validation_images_prediction = images_prediction[6:9]
+    validation_images_probabilities = images_probabilities[6:9]
+
+    testing_images_test = images_test[:6] + images_test[9:]
+    testing_images_prediction = images_prediction[:6] + images_prediction[9:]
+    testing_images_probabilities = images_probabilities[:6] + images_probabilities[9:]
+
+    # Create a result directory with a timestamp
     t = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
     result_dir = os.path.join(result_dir, t)
     os.makedirs(result_dir, exist_ok=True)
 
-    # initialize evaluator
+    # Initialize evaluator
     evaluator = putil.init_evaluator()
 
-    print("Finished loading and init evaluator. Post-process start.")
+    print("Finished loading the inference results. Starting with the post-processing pipeline now ...")
 
     post_process_params = {'our_post': True}
-    images_post_processed = putil.post_process_batch(images_test, images_prediction, images_probabilities,
-                                                     post_process_params, multi_process=True)
 
-    for i, img in enumerate(images_test):
-        evaluator.evaluate(images_post_processed[i], img.images[structure.BrainImageTypes.GroundTruth],
+    # Post-process validation images
+    print("\nPost-processing the validation set:")
+    validation_images_post_processed = putil.post_process_batch(
+        validation_images_test,
+        validation_images_prediction,
+        validation_images_probabilities,
+        post_process_params,
+        multi_process=True
+    )
+
+    # Post-process testing images
+    print("\nPost-processing the testing set:")
+    testing_images_post_processed = putil.post_process_batch(
+        testing_images_test,
+        testing_images_prediction,
+        testing_images_probabilities,
+        post_process_params,
+        multi_process=True
+    )
+
+    # Save and evaluate validation results
+    validation_result_dir = os.path.join(result_dir, 'validation')
+    os.makedirs(validation_result_dir, exist_ok=True)
+
+    for i, img in enumerate(validation_images_test):
+        evaluator.evaluate(validation_images_post_processed[i], img.images[structure.BrainImageTypes.GroundTruth],
                            img.id_ + '-PP')
+        # Save results
+        sitk.WriteImage(validation_images_prediction[i], os.path.join(validation_result_dir, img.id_ + '_SEG.mha'), True)
+        sitk.WriteImage(validation_images_post_processed[i], os.path.join(validation_result_dir, img.id_ + '_SEG-PP.mha'), True)
 
-        # save results
-        sitk.WriteImage(images_prediction[i], os.path.join(result_dir, images_test[i].id_ + '_SEG.mha'), True)
-        sitk.WriteImage(images_post_processed[i], os.path.join(result_dir, images_test[i].id_ + '_SEG-PP.mha'), True)
-
-    # use two writers to report the results
-    os.makedirs(result_dir, exist_ok=True)  # generate result directory, if it does not exists
-    result_file = os.path.join(result_dir, 'results.csv')
-    writer.CSVWriter(result_file).write(evaluator.results)
-
-    print('\nSubject-wise results...')
+    # Save validation results
+    validation_result_file = os.path.join(validation_result_dir, 'results.csv')
+    writer.CSVWriter(validation_result_file).write(evaluator.results)
+    print('\nSubject-wise results from the validation:')
     writer.ConsoleWriter().write(evaluator.results)
 
-    # report also mean and standard deviation among all subjects
-    result_summary_file = os.path.join(result_dir, 'results_summary.csv')
+    # Report aggregated statistics for validation results
+    validation_summary_file = os.path.join(validation_result_dir, 'results_summary.csv')
     functions = {'MEAN': np.mean, 'STD': np.std}
-    writer.CSVStatisticsWriter(result_summary_file, functions=functions).write(evaluator.results)
-    print('\nAggregated statistic results...')
+    writer.CSVStatisticsWriter(validation_summary_file, functions=functions).write(evaluator.results)
+    print('\nAggregated statistic results from the validation:')
     writer.ConsoleStatisticsWriter(functions=functions).write(evaluator.results)
 
-    # clear results such that the evaluator is ready for the next evaluation
+    # Save and evaluate testing results
+    evaluator.clear()  # Clear results for new evaluation
+    testing_result_dir = os.path.join(result_dir, 'testing')
+    os.makedirs(testing_result_dir, exist_ok=True)
+
+    for i, img in enumerate(testing_images_test):
+        evaluator.evaluate(testing_images_post_processed[i], img.images[structure.BrainImageTypes.GroundTruth],
+                           img.id_ + '-PP')
+        # Save results
+        sitk.WriteImage(testing_images_prediction[i], os.path.join(testing_result_dir, img.id_ + '_SEG.mha'), True)
+        sitk.WriteImage(testing_images_post_processed[i], os.path.join(testing_result_dir, img.id_ + '_SEG-PP.mha'), True)
+
+    # Save testing results
+    testing_result_file = os.path.join(testing_result_dir, 'results.csv')
+    writer.CSVWriter(testing_result_file).write(evaluator.results)
+    print('\nSubject-wise results from the testing:')
+    writer.ConsoleWriter().write(evaluator.results)
+
+    # Report aggregated statistics for testing results
+    result_summary_file = os.path.join(testing_result_dir, 'results_summary.csv')
+    functions = {'MEAN': np.mean, 'STD': np.std}
+    writer.CSVStatisticsWriter(result_summary_file, functions=functions).write(evaluator.results)
+    print('\nAggregated statistic results from the testing:')
+    writer.ConsoleStatisticsWriter(functions=functions).write(evaluator.results)
+
+    # Clear results to prepare for any further evaluations
     evaluator.clear()
 
 
@@ -276,7 +329,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.postprocess: # Only postprocess
-        print("Postprocessing from files at: ", args.postprocess)
+        print("Post-processing the files from: ", args.postprocess)
         postprocess_only(args.postprocess, args.result_dir)
     else: # This will train
         main(args.result_dir, args.data_atlas_dir, args.data_train_dir, args.data_test_dir)

@@ -30,9 +30,9 @@ class NiftiImageViewer:
         self.patient_id_raw = self.extract_patient_id(filepath1)
         self.patient_id_pp = self.extract_patient_id(filepath2)
 
-        # Load all DICE values for raw and processed images
-        self.dice_values_raw = self.get_dice_values(filepath1)
-        self.dice_values_pp = self.get_dice_values(filepath2)
+        # Load all DICE and HDRFDST values for raw and processed images
+        self.dice_values_raw, self.hdrfdst_values_raw = self.get_metrics(filepath1)
+        self.dice_values_pp, self.hdrfdst_values_pp = self.get_metrics(filepath2)
 
     def normalize_orientation(self):
         """Align orientation, origin, and spacing of GT and PP images to match the raw image."""
@@ -64,8 +64,8 @@ class NiftiImageViewer:
         suffix = match.group(2)  # Capture suffix after "-".
         return f"{patient_id}-{suffix}" if suffix else patient_id
 
-    def get_dice_values(self, filepath: str) -> dict:
-        """Extract all DICE values for the given PatientID and their corresponding labels."""
+    def get_metrics(self, filepath: str) -> tuple:
+        """Extract all DICE and HDRFDST values for the given PatientID and their corresponding labels."""
         results_path = os.path.dirname(filepath)
         csv_path = os.path.join(results_path, "results.csv")
         patient_id = self.extract_patient_id(filepath)
@@ -76,11 +76,12 @@ class NiftiImageViewer:
             # Filter rows for the given PatientID
             patient_rows = df[df['SUBJECT'] == patient_id]
             if patient_rows.empty:
-                raise ValueError(f"No DICE values found for Patient ID: {patient_id} in {csv_path}")
+                raise ValueError(f"No metrics found for Patient ID: {patient_id} in {csv_path}")
 
-            # Extract labels and DICE values into a dictionary
+            # Extract DICE and HDRFDST values into dictionaries
             dice_values = dict(zip(patient_rows['LABEL'], patient_rows['DICE']))
-            return dice_values
+            hdrfdst_values = dict(zip(patient_rows['LABEL'], patient_rows['HDRFDST']))
+            return dice_values, hdrfdst_values
         except FileNotFoundError:
             raise FileNotFoundError(f"The results file was not found at {csv_path}")
         except KeyError as e:
@@ -88,14 +89,16 @@ class NiftiImageViewer:
 
     def display(self):
         """Interactive display of the three images."""
-        raw_dice_str = ", ".join([f"{label} ({value:.3f})" for label, value in self.dice_values_raw.items()])
-        pp_dice_str = ", ".join([f"{label} ({value:.3f})" for label, value in self.dice_values_pp.items()])
+        raw_dice_str = ", ".join([f"{label} ({value:.2f})" for label, value in self.dice_values_raw.items()])
+        pp_dice_str = ", ".join([f"{label} ({value:.2f})" for label, value in self.dice_values_pp.items()])
+        raw_hdrfdst_str = ", ".join([f"{label} ({value:.2f})" for label, value in self.hdrfdst_values_raw.items()])
+        pp_hdrfdst_str = ", ".join([f"{label} ({value:.2f})" for label, value in self.hdrfdst_values_pp.items()])
 
         # Set up the figure and axes
         self.fig, (self.ax1, self.ax2, self.ax3) = plt.subplots(1, 3, figsize=(15, 5))
-        self.ax1.set_title(f"Ground Truth - Slice {self.current_slice}", fontsize=14)
-        self.ax2.set_title(f"Raw Segmentation - Slice {self.current_slice}", fontsize=14)
-        self.ax3.set_title(f"PP Segmentation - Slice {self.current_slice}", fontsize=14)
+        self.ax1.set_title(f"Ground Truth Labels", fontsize=14)
+        self.ax2.set_title(f"Raw Segmentation", fontsize=14)
+        self.ax3.set_title(f"PP Segmentation", fontsize=14)
         self.ax1.axis('off')
         self.ax2.axis('off')
         self.ax3.axis('off')
@@ -105,9 +108,9 @@ class NiftiImageViewer:
 
         # Add navigation instructions
         self.fig.suptitle(
-            f"CURRENT AXIS: {self.axis_labels[self.axis]}\n"
-            f"RAW DICES: {raw_dice_str}\n"
-            f"PP DICES: {pp_dice_str}",
+            f"CURRENT VIEW: {self.axis_labels[self.axis]} - Slice {self.current_slice}\n"
+            f"\nRAW DICES: {raw_dice_str}\nPP DICES: {pp_dice_str}\n"
+            f"\nRAW HDRFDST: {raw_hdrfdst_str}\nPP HDRFDST: {pp_hdrfdst_str}",
             fontsize=20
         )
 
@@ -116,7 +119,7 @@ class NiftiImageViewer:
         self.fig.canvas.mpl_connect('key_press_event', self.on_keypress)
 
         # Show the figure
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 1.2])
         plt.show()
 
     def on_scroll(self, event):
@@ -169,17 +172,19 @@ class NiftiImageViewer:
             self.im_display3.set_data(slice3)
 
         # Update subplot titles
-        self.ax1.set_title(f"Ground Truth - Slice {self.current_slice}", fontsize=20)
-        self.ax2.set_title(f"Raw Segmentation - Slice {self.current_slice}", fontsize=20)
-        self.ax3.set_title(f"PP Segmentation - Slice {self.current_slice}", fontsize=20)
+        self.ax1.set_title(f"Ground Truth Labels", fontsize=20)
+        self.ax2.set_title(f"Raw Segmentation", fontsize=20)
+        self.ax3.set_title(f"PP Segmentation", fontsize=20)
 
-        # Update the figure title with DICE values
-        raw_dice_str = ", ".join([f"{label} ({value:.3f})" for label, value in self.dice_values_raw.items()])
-        pp_dice_str = ", ".join([f"{label} ({value:.3f})" for label, value in self.dice_values_pp.items()])
+        # Update the figure title with DICE and HDRFDST values
+        raw_dice_str = ", ".join([f"{label} ({value:.2f})" for label, value in self.dice_values_raw.items()])
+        pp_dice_str = ", ".join([f"{label} ({value:.2f})" for label, value in self.dice_values_pp.items()])
+        raw_hdrfdst_str = ", ".join([f"{label} ({value:.2f})" for label, value in self.hdrfdst_values_raw.items()])
+        pp_hdrfdst_str = ", ".join([f"{label} ({value:.2f})" for label, value in self.hdrfdst_values_pp.items()])
         self.fig.suptitle(
-            f"CURRENT AXIS: {self.axis_labels[self.axis]}\n"
-            f"RAW DICES: {raw_dice_str}\n"
-            f"PP DICES: {pp_dice_str}",
+            f"CURRENT VIEW: {self.axis_labels[self.axis]} - Slice {self.current_slice}\n"
+            f"\nRAW DICES: {raw_dice_str}\nPP DICES: {pp_dice_str}\n"
+            f"\nRAW HDRFDST: {raw_hdrfdst_str}\nPP HDRFDST: {pp_hdrfdst_str}",
             fontsize=20
         )
 
@@ -190,7 +195,8 @@ class NiftiImageViewer:
 if __name__ == "__main__":
     filepath_gt = "dataset/test/117122/labels_native.nii.gz"  # Ground truth labels
     filepath_raw = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/117122_SEG.mha"  # Raw segmentation
-    filepath_pp = "mia-result/2024-11-27-20-44-34 (PP-ddO, ne20_md50)/117122_SEG-PP.mha"  # Post-processed segmentation
+    filepath_pp = "mia-result/2024-12-07-14-22-04 (PP-ddO&HF50, ne20_md50)/validation/117122_SEG-PP.mha"  # Post-processed segmentation (validation)
+    #filepath_pp = "mia-result/2024-12-07-14-22-04 (PP-ddO&HF50, ne20_md50)/testing/118528_SEG-PP.mha"  # Post-processed segmentation (testing)
 
     gt = sitk.ReadImage(filepath_gt)
     raw = sitk.ReadImage(filepath_raw)
@@ -198,7 +204,7 @@ if __name__ == "__main__":
 
     print("Ground truth size:", gt.GetSize())
     print("Raw image size:", raw.GetSize())
-    print("Processed image size:", pp.GetSize())
+    print("PP image size:", pp.GetSize())
 
     viewer = NiftiImageViewer(raw, pp, gt, filepath_raw, filepath_pp)
     viewer.display()
