@@ -75,8 +75,7 @@ class ImagePostProcessing(pymia_fltr.Filter):
         #                                                   opening_radius=data[label][OPENING_KERNEL_SIZE],
         #                                                   kernel_type=sitk.sitkBall)
 
-        """Closing and Opening."""
-        # Closing and Opening:
+        """Closing and Opening"""
         # for label in data.keys():
         #     processed_image:sitk.Image = morph.closing_opening(image=data[label][BINARY_IMAGE_KEY],
         #                                                closing_radius=data[label][CLOSING_KERNEL_SIZE],
@@ -313,8 +312,8 @@ class PostProcessingUtils:
 
             # Skip empty labels
             if np.sum(binary_array) == 0:
-                data[label][OPENING_KERNEL_SIZE] = 1
-                data[label][CLOSING_KERNEL_SIZE] = 1
+                data[label][OPENING_KERNEL_SIZE] = 0
+                data[label][CLOSING_KERNEL_SIZE] = 0
                 print(f"Label {label}: Empty label, skipping.")
                 continue
 
