@@ -193,10 +193,11 @@ class NiftiImageViewer:
 
 
 if __name__ == "__main__":
-    filepath_gt = "dataset/test/118528/labels_native.nii.gz"  # Ground truth labels
-    filepath_raw = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/118528_SEG.mha"  # Raw segmentation
+    filepath_gt = "dataset/test/117122/labels_native.nii.gz"  # Ground truth labels
+    filepath_raw = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/117122_SEG.mha"  # Raw segmentation
     #filepath_pp = "mia-result/2024-12-09_ddOpening&2DHF/2024-12-07-17-08-58 (ddO&2DHF50)/validation/117122_SEG-PP.mha"  # Post-processed segmentation (validation)
-    filepath_pp = "mia-result/2024-12-09_ddOpening&2DHF/2024-12-07-17-08-58 (ddO&2DHF50)/testing/118528_SEG-PP.mha"  # Post-processed segmentation (testing)
+    filepath_pp = "mia-result/2024-12-09_ddOpening&2DHF/2024-12-07-17-08-58 (ddO&2DHF50)/validation/117122_SEG-PP.mha"  # Post-processed segmentation (validation)
+    #filepath_pp = "mia-result/2024-12-09_ddOpening&2DHF/2024-12-07-17-08-58 (ddO&2DHF50)/testing/123925_SEG-PP.mha"  # Post-processed segmentation (testing)
 
     gt = sitk.ReadImage(filepath_gt)
     raw = sitk.ReadImage(filepath_raw)
