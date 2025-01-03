@@ -63,6 +63,8 @@ class NiftiImageViewer:
             vmin=0,
             vmax=5
         )
+        # self.im_display1 = self.ax1.imshow(disp_slice1, cmap='gray', origin='lower', vmin=0, vmax=1)
+        # self.im_display2 = self.ax2.imshow(disp_slice2, cmap='gray', origin='lower', vmin=0, vmax=1)
         
         # Connect the mouse wheel event for scrolling
         self.fig.canvas.mpl_connect('scroll_event', self.on_scroll)
@@ -109,7 +111,7 @@ class NiftiImageViewer:
 # Example usage
 if __name__ == "__main__":
     from mialab.filtering.postprocessing import ImagePostProcessing
-    filepath1 = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/117122_SEG.mha"  # Replace with the first image file path
+    filepath1 = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/118528_SEG.mha"  # Replace with the first image file path
     # filepath2 = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/117122_SEG.mha"  # Replace with the second image file path
 
     raw = sitk.ReadImage(filepath1)

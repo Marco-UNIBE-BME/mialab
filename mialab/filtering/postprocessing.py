@@ -95,14 +95,14 @@ class ImagePostProcessing(pymia_fltr.Filter):
         # for label in data.keys():
         #     # Retrieve the binary mask for the label
         #     binary_image = data[label][BINARY_IMAGE_KEY]
-        #
+        
         #     # Apply hole-filling
         #     # hole_filling_filter = sitk.BinaryFillholeImageFilter()
         #     # hole_filled_image = hole_filling_filter.Execute(binary_image)
-        #
+        
         #     # Thresholded
-        #     hole_filled_image = morph.fill_small_holes_2d(binary_image, 200)
-        #
+        #     hole_filled_image = morph.fill_small_holes_2d(binary_image, 50)
+        
         #     # Update the processed image
         #     data[label][PROCESSED_IM_KEY] = hole_filled_image
 
@@ -112,8 +112,10 @@ class ImagePostProcessing(pymia_fltr.Filter):
             processed_image = morph.opening(image=processed_image,
                                             opening_radius=data[label][OPENING_KERNEL_SIZE],
                                             kernel_type=sitk.sitkBall)
-            processed_image = morph.fill_small_holes_2d(processed_image, 50)
+            # processed_image = morph.fill_small_holes_2d(processed_image, 50)
             data[label][PROCESSED_IM_KEY] = processed_image
+
+        # return data[1][BINARY_IMAGE_KEY]
 
         """Median filtering"""
         # Median filtering:

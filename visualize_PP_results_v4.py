@@ -165,6 +165,7 @@ class NiftiImageViewer:
             self.im_display1 = self.ax1.imshow(slice1, cmap='viridis', origin='lower', vmin=0, vmax=5)
             self.im_display2 = self.ax2.imshow(slice2, cmap='viridis', origin='lower', vmin=0, vmax=5)
             self.im_display3 = self.ax3.imshow(slice3, cmap='viridis', origin='lower', vmin=0, vmax=5)
+
         else:
             # Update the data for existing image displays
             self.im_display1.set_data(slice1)
@@ -195,7 +196,8 @@ class NiftiImageViewer:
 if __name__ == "__main__":
     filepath_gt = "dataset/test/117122/labels_native.nii.gz"  # Ground truth labels
     filepath_raw = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/117122_SEG.mha"  # Raw segmentation
-    filepath_pp = "mia-result/2024-12-07-17-08-58 (PP, ddO&HF2D50)/validation/117122_SEG-PP.mha"  # Post-processed segmentation (validation)
+    filepath_pp = "mia-result/2024-12-12-13-33-50_bin_fillhole/validation/117122_SEG-PP.mha"  # Post-processed segmentation (validation)
+    filepath_pp = "mia-result/2024-12-12-14-24-31_2D_fillhole_thresh_250/validation/117122_SEG-PP.mha"
     #filepath_pp = "mia-result/2024-12-07-14-22-04 (PP-ddO&HF50)/testing/118528_SEG-PP.mha"  # Post-processed segmentation (testing)
 
     gt = sitk.ReadImage(filepath_gt)
