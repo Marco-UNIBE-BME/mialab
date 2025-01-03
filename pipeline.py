@@ -1,16 +1,22 @@
-"""A medical image analysis pipeline.
+"""
+102475-HS2024-0: Medical Image Analysis Lab: postprocessing.py
 
-The pipeline is used for brain tissue segmentation using a decision forest classifier.
+GROUP 5 - POST-PROCESSING
+@author Marco Portmann | marco.portmann@students.unibe.ch
+@author José Inácio | jose.inacio@students.unibe.ch
+@author Max Bögli | max.boegli@students.unibe.ch
+
+@brief
+    This file contains the MIA pipeline, the post-processing only pipeline and the main entry function.
+
+@date January, 2025
 """
 import argparse
 import datetime
 import os
 import sys
 import timeit
-import warnings
-
 from inspect import getsourcefile
-# import pickle
 import joblib
 
 import SimpleITK as sitk
@@ -37,8 +43,17 @@ LOADING_KEYS = [structure.BrainImageTypes.T1w,
                 structure.BrainImageTypes.RegistrationTransform]  # the list of data we will load
 
 
-def postprocess_only(path_inference_output:str, result_dir:str):
-    """This function loads inference results and applies post-processing to them"""
+def postprocess_only(path_inference_output:str, result_dir:str) -> None:
+    """
+    This function loads inference results and applies post-processing to them.
+
+    Args:
+        path_inference_output:str The path pointing towards a directory where the output from an earlier training and prediction execution was stored.
+        result_dir:str The path pointing toward the directory where the evaluator from a previous training and prediction step stored the results.
+    
+    Returns:
+        None
+    """
 
     with open(path_inference_output, 'rb') as f:
         (images_test, images_prediction, images_probabilities) = joblib.load(f)

@@ -1,14 +1,24 @@
-"""The post-processing module contains classes for image filtering mostly applied after a classification.
-
-Image post-processing aims to alter images such that they depict a desired representation.
 """
-import warnings
+102475-HS2024-0: Medical Image Analysis Lab: postprocessing.py
+
+GROUP 5 - POST-PROCESSING
+@author Marco Portmann | marco.portmann@students.unibe.ch
+@author José Inácio | jose.inacio@students.unibe.ch
+@author Max Bögli | max.boegli@students.unibe.ch
+
+@brief
+    This file contains the post processing implementation.
+    The structure is divied into three classes:
+    -   ImagePostProcessing: Exposes the execute function used by the pipeline and defines the functions applied to an image.
+    -   PostProcessingUtils: Declares functions for comprehensive data handling and the data driven approach.
+    -   MorphologicalOperations: Represents a collection of morphological operation filters.
+
+@date January, 2025
+"""
 
 import numpy as np
-import pymia.filtering
 import pymia.filtering.filter as pymia_fltr
 import SimpleITK as sitk
-import math
 
 # Our dictionary keys
 BINARY_IMAGE_KEY:str = 'image'
@@ -26,18 +36,70 @@ class ImagePostProcessing(pymia_fltr.Filter):
         """Initializes a new instance of the ImagePostProcessing class."""
         super().__init__()
 
-    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
-        """Registers an image.
+    def execute(self, image: sitk.Image) -> sitk.Image:
+        """
+        This executes the post processing pipeline on a given image.
+        Post processing contains the following steps:
+        -   Split the image into per label binary images (volumes)
+        -   Apply data driven opening and fixed threshold 2D hole filling to each label
+        -   Stitch the images back together into a single segmented volume
 
         Args:
-            image (sitk.Image): The image.
-            params (FilterParams): The parameters.
+            image (sitk.Image): A segmented volume as defined by the MIA pipeline.
 
         Returns:
-            sitk.Image: The post-processed image.
+            sitk.Image: A post processed version of the input volume.  
         """
 
-        # todo: replace this filter by a post-processing - or do we need post-processing at all?
+        utils:PostProcessingUtils = PostProcessingUtils()
+
+        """STEP 1: Initialize a data strcuture and populate it with individual binary images for all labels."""
+        data:dict[dict] = utils.init_data_structure(image) # NOTE: We omit label 0. The background is not being post-processed.
+        orig_image = image
+        utils.split_image(image, data)
+
+        """STEP 2: Populate data structure with metadata for processing in Step 3."""
+        utils.calc_co_kernels(data)
+        fillhole_2d_thresh:int = 50
+
+        """STEP 3: Application of our 'per-label' post-processing."""
+        morph = MorphologicalOperations()
+
+        """Opening and Hole-Filling 2D"""
+        for label in data.keys():
+            processed_image = data[label][BINARY_IMAGE_KEY]
+
+            processed_image = morph.opening(image=processed_image,
+                                            opening_radius=data[label][OPENING_KERNEL_SIZE],
+                                            kernel_type=sitk.sitkBall)
+            
+            processed_image = morph.fill_small_holes_2d(processed_image, fillhole_2d_thresh)
+
+            data[label][PROCESSED_IM_KEY] = processed_image
+
+        """STEP 4: Stitching our processed per label images back into one image."""
+        output_image = sitk.Image(orig_image.GetSize(), sitk.sitkUInt8)
+        output_image.CopyInformation(orig_image)
+
+        for label in data.keys():
+            processed_image = data[label][PROCESSED_IM_KEY]
+            label_mask = sitk.Mask(image = sitk.Cast(output_image == 0, sitk.sitkUInt8) * label,
+                                     maskImage=processed_image,
+                                     outsideValue=0)
+            
+            output_image += label_mask
+
+        """STEP 5: Apply post-post-processing."""
+        # This step was finally not implemented. Possible approaches can be found in '_testing_documentation'.
+
+        return output_image
+
+    def _testing_documentation(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
+        """
+        This function is not meant to be executed. The code here represents a documentation of different approaches which were tested
+        and how and in which sequence they were implemented or foreseen. Note that only certain combinations will produce meaningful results.
+        Due to irrelevance to the final outcome we consider this as sufficient documentation.
+        """
 
         utils:PostProcessingUtils = PostProcessingUtils()
 
@@ -211,7 +273,7 @@ class ImagePostProcessing(pymia_fltr.Filter):
 
 class PostProcessingUtils:
     def __init__(self) -> None:
-        """Intiialize the pre-post-processor. Pass the image with predicted labels to intitialize the data structure for the pipeline."""
+        """Create an instance."""
         pass
     
     def init_data_structure(self, prediction_image:sitk.Image) -> dict:
@@ -364,7 +426,7 @@ class PostProcessingUtils:
             # opening_kernel_size = max(1, min(3, round(opening_kernel_size)))
             # closing_kernel_size = 0
 
-            # Debugging: Print metrics and kernel sizes
+            # Info: Print metrics and kernel sizes
             print(f"Label {label}: Surface-to-Volume Ratio = {surface_to_volume_ratio:.2f}, "
                   f"Fragments = {num_fragments}, "
                   f"CLOSING_KERNEL_SIZE = {closing_kernel_size}, OPENING_KERNEL_SIZE = {opening_kernel_size}")
@@ -374,6 +436,7 @@ class PostProcessingUtils:
             data[label][OPENING_KERNEL_SIZE] = opening_kernel_size
 
     def rank_labels_amount_voxels(self, prediction_image:sitk.Image, data:dict) -> None:
+        """NOTE: Not implemented."""
         from pymia.filtering.postprocessing import LargestNConnectedComponents
         pass
         # n = len(data)
@@ -384,7 +447,8 @@ class MorphologicalOperations():  # José: New morphological opening and closing
     """Represents a collection of morphological operation filters."""
 
     def __init__(self):
-        super().__init__()
+        """Represents a collection of morphological operation filters."""
+        # NOTE: Future cleanup would foresee to only initialize filtering classes we use...
         self._closing_filter = sitk.BinaryMorphologicalClosingImageFilter()
         self._closing_filter.SetKernelRadius(1)
         self._closing_filter.SafeBorderOn()
@@ -441,17 +505,31 @@ class MorphologicalOperations():  # José: New morphological opening and closing
         return im
 
     def binary_fill_hole(self, image:sitk.Image) -> sitk.Image:
+        """Apply geodesic boundray propagation hole filling."""
         # self._binary_hole_filling_filter.SetFullyConnected(True)
         # print(self.binary_hole_filling_filter.GetFullyConnected())
         return self._binary_hole_filling_filter.Execute(image)
     
     def white_top_hat(self, image:sitk.Image) -> sitk.Image:
+        """Apply top hat transform to an image."""
         return self._white_top_hat_filter.Execute(image)
 
     def black_top_hat(self, image:sitk.Image) -> sitk.Image:
+        """Apply black hat transform to an image."""
         return self._black_top_hat_filter.Execute(image)
 
-    def fill_small_holes_2d(self, binary_image, size_threshold):
+    def fill_small_holes_2d(self, binary_image:sitk.Image, size_threshold:int) -> sitk.Image:
+        """
+        This function takes a binary volume and will fill holes in each slice which are smaller than size_threshold.
+        Consider degradation of performance for large volumes and high thresholds.
+
+        Args:
+            binary_image (sitk.Image): A single label binary image (volume)
+            size_threshold (int): Threshold where holes with smaller area than this value will be filled.
+
+        Returns:
+            sitk.Image: The hole filled input image (copy)
+        """
         hole_filled_image = sitk.Image(binary_image.GetSize(), sitk.sitkUInt8)
         hole_filled_image.CopyInformation(binary_image)
         
@@ -482,27 +560,3 @@ class MorphologicalOperations():  # José: New morphological opening and closing
             hole_filled_image = sitk.Paste(hole_filled_image, filled_slice, filled_slice.GetSize(), destinationIndex=[0, 0, z])
         
         return hole_filled_image
-
-    # def execute_per_label(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
-    #     """Execute the morphological opening and closing operations."""
-    #     # Making sure we have binary images before running binary closing and opening
-    #     image_arr = sitk.GetArrayViewFromImage(image).flatten()
-    #     labels = np.unique(image_arr)
-
-    #     output_image = sitk.Image(image.GetSize(), sitk.sitkUInt8)
-    #     output_image.CopyInformation(image)
-
-    #     for label in labels:
-    #         if label == 0: # Skip background
-    #             continue
-    #         print(label, type(label))
-    #         binary_image = sitk.Equal(image, int(label))
-
-    #         processed_image = self.apply_closing(binary_image)
-    #         processed_image = self.apply_opening(processed_image)
-
-    #         # TODO: Figure out priority. Via probabilities?
-    #         output_image = sitk.Mask(image=output_image, maskImage=sitk.Cast(sitk.BinaryNot(processed_image), sitk.sitkUInt8), outsideValue=int(label))
-
-    #     print(output_image.GetPixelIDTypeAsString())
-    #     return output_image

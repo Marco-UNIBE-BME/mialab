@@ -1,3 +1,22 @@
+"""
+102475-HS2024-0: Medical Image Analysis Lab: visualizer_PP_results.py
+
+GROUP 5 - POST-PROCESSING
+@author Marco Portmann | marco.portmann@students.unibe.ch
+@author José Inácio | jose.inacio@students.unibe.ch
+@author Max Bögli | max.boegli@students.unibe.ch
+
+@brief
+    This file is used to visually assess an already post processed image.
+    This visualizer does NOT apply post processing itself. Also, it displays the
+    quantitative results for the post-processing.
+    Ground truth, raw segmentation and PP segmentation are shown side by side.
+
+    The viewer is interactive. Mousewheel for scrolling through slices, right and left keys change the view (axial, coronal, saggital).
+
+@date November, 2024
+"""
+
 import SimpleITK as sitk
 import numpy as np
 import pandas as pd
@@ -197,7 +216,6 @@ if __name__ == "__main__":
     filepath_gt = "dataset/test/117122/labels_native.nii.gz"  # Ground truth labels
     filepath_raw = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/117122_SEG.mha"  # Raw segmentation
     filepath_pp = "mia-result/2024-12-12-13-33-50_bin_fillhole/validation/117122_SEG-PP.mha"  # Post-processed segmentation (validation)
-    filepath_pp = "mia-result/2024-12-12-14-24-31_2D_fillhole_thresh_250/validation/117122_SEG-PP.mha"
     #filepath_pp = "mia-result/2024-12-07-14-22-04 (PP-ddO&HF50)/testing/118528_SEG-PP.mha"  # Post-processed segmentation (testing)
 
     gt = sitk.ReadImage(filepath_gt)

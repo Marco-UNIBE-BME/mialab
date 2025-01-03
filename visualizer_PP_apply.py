@@ -1,3 +1,22 @@
+"""
+102475-HS2024-0: Medical Image Analysis Lab: visualizer_PP_apply.py
+
+GROUP 5 - POST-PROCESSING
+@author Marco Portmann | marco.portmann@students.unibe.ch
+@author José Inácio | jose.inacio@students.unibe.ch
+@author Max Bögli | max.boegli@students.unibe.ch
+
+@brief
+    This file is used to qualitatively assess the effect of post processing on a SINGLE image.
+    Post processing is applied to *ONE* image in this script and then displayed.
+
+    The path 'filepath1' defines which raw segmented image to load. Post processing is then
+    applied to only that image. THe visualizer then shows the raw and post processed side by side.
+    The viewer is interactive. Mousewheel for scrolling through slices, spacebar for changing the view (axial, coronal, saggital).
+
+@date November, 2024
+"""
+
 import SimpleITK as sitk
 import numpy as np
 import matplotlib.pyplot as plt
@@ -111,14 +130,13 @@ class NiftiImageViewer:
 # Example usage
 if __name__ == "__main__":
     from mialab.filtering.postprocessing import ImagePostProcessing
-    filepath1 = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/118528_SEG.mha"  # Replace with the first image file path
-    # filepath2 = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/117122_SEG.mha"  # Replace with the second image file path
+    filepath1 = "mia-result/2024-11-18-19-46-59 (noPP, ne20_md50)/118528_SEG.mha"  # Replace with any image file path from prediction.
 
     raw = sitk.ReadImage(filepath1)
     pp = sitk.ReadImage(filepath1)
 
     # Add evaluation.
-    # Maybe add other views.
+    # Maybe add other views. NOTE: Both in the other visualizer version.
     processor = ImagePostProcessing()
     pp = processor.execute(pp)
 
