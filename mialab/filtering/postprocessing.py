@@ -137,9 +137,9 @@ class ImagePostProcessing(pymia_fltr.Filter):
         #                                                   opening_radius=data[label][OPENING_KERNEL_SIZE],
         #                                                   kernel_type=sitk.sitkBall)
 
-        """Closing and Opening"""
+        """Opening and Closing"""
         # for label in data.keys():
-        #     processed_image:sitk.Image = morph.closing_opening(image=data[label][BINARY_IMAGE_KEY],
+        #     processed_image:sitk.Image = morph.opening_closing(image=data[label][BINARY_IMAGE_KEY],
         #                                                closing_radius=data[label][CLOSING_KERNEL_SIZE],
         #                                                opening_radius=data[label][OPENING_KERNEL_SIZE],
         #                                                kernel_type=sitk.sitkBall)
@@ -502,6 +502,12 @@ class MorphologicalOperations():  # José: New morphological opening and closing
         """Execute the morphological opening and closing operations."""
         im = self.closing(image, closing_radius, kernel_type)
         im = self.opening(im, opening_radius, kernel_type)
+        return im
+
+    def opening_closing(self, image: sitk.Image, closing_radius:int, opening_radius:int, kernel_type:int=sitk.sitkBall) -> sitk.Image:
+        """Execute the morphological opening and closing operations."""
+        im = self.opening(image, opening_radius, kernel_type)
+        im = self.closing(im, closing_radius, kernel_type)
         return im
 
     def binary_fill_hole(self, image:sitk.Image) -> sitk.Image:
