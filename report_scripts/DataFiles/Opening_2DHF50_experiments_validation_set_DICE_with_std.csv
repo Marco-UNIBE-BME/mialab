@@ -1,0 +1,4 @@
+Kernel,Amygdala_mean,Amygdala_std,GreyMatter_mean,GreyMatter_std,Hippocampus_mean,Hippocampus_std,Thalamus_mean,Thalamus_std,WhiteMatter_mean,WhiteMatter_std
+ddO & 2D HF 50,0.71,0.10,0.72,0.02,0.76,0.02,0.86,0.02,0.83,0.01
+ddO,0.71,0.10,0.72,0.02,0.76,0.02,0.86,0.02,0.83,0.01
+raw,0.56,0.06,0.72,0.01,0.57,0.03,0.78,0.02,0.81,0.03
