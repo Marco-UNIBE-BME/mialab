@@ -99,7 +99,7 @@ python pipeline.py --postprocess "inferences/2024-11-10-23-09-30.joblib"
 
 For more informations read the report contained in this repo:
 ```
-\report\report.pdf
+\final_report\MIALab_Portmann_Boegli_Inacio.pdf
 ```
 
 ## Useful links
