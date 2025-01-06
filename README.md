@@ -1,4 +1,3 @@
-# $${\color{red}* To do: see further down * }$$
 
 ### 102475-HS2024-0: Medical Image Analysis Lab
 # Adaptive Morphological Post-processing for Enhanced Brain Segmentation Accuracy
@@ -103,7 +102,7 @@ python pipeline.py --postprocess "inferences/2024-11-10-23-09-30.joblib"
    
 ![Pipeline with Post Processing Overview](docs/post_process_pipeline.png)
 
-## Report $${\color{red}Change to correct path before Hand In}$$
+## Report
 
 For more informations read the report contained in this repo:
 ```
