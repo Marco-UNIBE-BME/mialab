@@ -10,12 +10,14 @@ This project introduces a Python-based Medical Image Analysis (MIA) pipeline for
 
 The project leverages machine learning techniques and morphological operations to improve the quality of brain structure segmentation, which is crucial for disease diagnosis, treatment planning, and progression monitoring.
 
-## Group Members
-José Miguel PINTO INÁCIO | jose.inacio@students.unibe.ch
+### General process overview:
+![Pipeline with Post Processing Overview](docs/pipeline_overview_final.png)
 
-Max BÖGLI | max.boegli@students.unibe.ch
-
-Marco Daniel PORTMANN | marco.portmann@students.unibe.ch
+### Results with the current implementation 
+- Post Processing significantly (p<<0.001) increased Dice Coefficient.
+- Post Processing significantly (p<<0.001) decreased Hausdorff Distance.
+  
+![Pipeline with Post Processing Overview](docs/testset_distributions.png)
 
 ## Features
 - **Automated Brain Segmentation:** Segments Grey Matter, White Matter, Hippocampus, Amygdala, and Thalamus from MRI scans.
@@ -81,19 +83,25 @@ NOTE: Make sure to call this while being in the mialab folder, the paths are rel
 python pipeline.py --data_atlas_dir "./dataset/atlas" --data_train_dir "./dataset/train" --data_test_dir "./dataset/test"
 ```
 After execution the pipeline script will create an output folder called "mia-results".
+
 ### Key Pipeline Steps:
 
 1. Preprocessing: Skull stripping, intensity normalization, image registration.
 2. Segmentation: Training a Random Forest classifier and predicting tissue labels.
 3. Post-Processing: Applying data-driven opening and 2D hole-filling operations.
+   
+![Pipeline with Post Processing Overview](docs/full_pipeline.png)
 
 
 ## Executing the post-processing pipeline
 
+This is relevant if changes to the post processing pipeline are to be evaluated without rerunning all previous steps. It requires running the "full pipeline" prior to have access to a joblib element representing the trained RF classifier.
+
 ```bash
 python pipeline.py --postprocess "inferences/2024-11-10-23-09-30.joblib"
 ```
-
+   
+![Pipeline with Post Processing Overview](docs/post_process_pipeline.png)
 
 ## Report $${\color{red}Change to correct path before Hand In}$$
 
@@ -101,6 +109,13 @@ For more informations read the report contained in this repo:
 ```
 \final_report\MIALab_Portmann_Boegli_Inacio.pdf
 ```
+
+## Group Members
+José Miguel PINTO INÁCIO | jose.inacio@students.unibe.ch
+
+Max BÖGLI | max.boegli@students.unibe.ch
+
+Marco Daniel PORTMANN | marco.portmann@students.unibe.ch
 
 ## Useful links
 
