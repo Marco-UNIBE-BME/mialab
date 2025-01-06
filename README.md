@@ -23,7 +23,7 @@ The project leverages machine learning techniques and morphological operations t
 - **Adaptive Morphological Post-Processing:**
   - Data-driven opening
   - 2D hole-filling
-- **Quantitative and Qualitative Evaluation:** Dice coefficient, Hausdorff distance, and statistical significance tests.
+- **Quantitative and Qualitative Evaluation:** Dice coefficients, Hausdorff distances, visual inspections and statistical significance tests.
 - **Machine Learning Integration:** Random Forest Classifier with feature extraction and registration.
 
 
