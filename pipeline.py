@@ -339,7 +339,7 @@ if __name__ == "__main__":
         '--postprocess',
         type=str,
         default=None,
-        help='If it should only postprocess. Point it to the pickle file to load.'
+        help='If it should only postprocess. Point it to the joblib file to load.'
     )
 
     args = parser.parse_args()

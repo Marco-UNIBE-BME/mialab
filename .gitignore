@@ -242,6 +242,7 @@ xcuserdata/
 ### Project specific stuff
 *.nii.gz
 *.mha
-/inferences
+*.pkl
+*.joblib
 /old_visualizers
 MIAlab_data.zip
