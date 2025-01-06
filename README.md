@@ -38,6 +38,7 @@ The project leverages machine learning techniques and morphological operations t
 │   ├── filtering/                # Preprocessing, feature extraction, and postprocessing
 │   └── utilities/                # Utility functions for file access and multiprocessing
 ├── report_scripts/               # Scripts for results visualization and statistical tests
+├── inferences/                   # Folder storing the joblib compressed RF predictions
 ├── final_report/                 # Folder containing the scientific report of this project
 ├── test/                         # Test scripts for pipeline validation
 ├── pipeline.py                   # Main script to run the full pipeline
